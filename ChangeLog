@@ -24,7 +24,10 @@
 * Removed all.host from hosts.d that used to point all OUTPUT to the classify 
   ruleset. Playing with TOS bits can cause problems on todays broken Intarweb.
 
-* Made modprobe that may file use "-q" to supress error output.
+* Made modprobe that may fail use "-q" to supress error output.
+
+* Move the actual firewall script to src/firewall.in so it can be built by
+  the Makefile
 
 * Made the documentation and firewall be built by the Makefile so they all
   refer to the correct file locations.
