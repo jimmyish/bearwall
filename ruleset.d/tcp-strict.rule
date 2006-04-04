@@ -1,0 +1,21 @@
+#
+# Policy: TCP Strict
+# Description:
+#  Disallow any incoming packets
+
+. support/ruleset.functions
+
+# Ignore non TCP
+$IPTABLES --append $RULE --protocol \! tcp --jump RETURN
+
+# Accept any packets that were created by us
+$IPTABLES --append $RULE -m state --state ESTABLISHED,RELATED --jump ACCEPT
+
+# Due to the sheer number of people infected with the MS worm of the week
+# I'm not going to bother logging this, in fact, I'm going to be cruel
+# and deny it outright to slow the machines down as they retransmit.
+$IPTABLES --append $RULE \
+	--protocol tcp -m multiport --destination-ports 80 --jump DROP
+
+# Deny everything else.
+polite_reject $RULE

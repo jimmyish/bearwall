@@ -1,0 +1,122 @@
+#
+# Each of these files creates a policy which can be bound to a range of
+# IP's.
+#
+# Rule name: Classify
+# 
+# Policy:
+#  As specified in environmental variables, defaults listed.
+#
+# Note: This policy does not allow or deny traffic a seperate policy should
+#       be bound to do so.
+#
+# --source-ports and --destination-ports added by Wuzzle
+# after Isomer explained how to do it. :)
+
+# ftp-control/ssh/telnet time rtelnet auth ntp talk:ntalk timed
+TCP_LOWDELAY="21:23 37 107 113 123 517:518 525"
+# dns icq
+UDP_LOWDELAY="53 4000"
+
+# ftp-data dns
+TCP_HIGHTHROUGHPUT="20 53"
+UDP_HIGHTHROUGHPUT=69
+
+# High relibility
+TCP_HIGHRELIABILITY=
+UDP_HIGHRELIABILITY=
+
+# Should syn's be concidered reliable?
+TCP_SYN_RELIABLE=yes
+
+# Minimise $cost$
+# smtp pop2:pop3 nntp imap3
+TCP_CHEAP="25 109:110 119 220"
+UDP_CHEAP=
+
+######################################################################
+# No user serviciable parts below this line
+#
+
+. support/ruleset.functions
+
+# Reference:
+# [ precedence | tos | 0 ]
+# 0 1000 0 = 0x10 	minimise delay
+# 0 0100 0 = 0x08	maximise throughput
+# 0 0010 0 = 0x04	maximise reliability
+# 0 0001 0 = 0x02	minimise $cost$
+
+for i in $TCP_LOWDELAY; do
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --source-port $i \
+			--set-tos 0x10
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --destination-port $i \
+			--set-tos 0x10
+done
+for i in $UDP_LOWDELAY; do
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol udp --source-port $i \
+			--set-tos 0x10
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol udp --destination-port $i \
+			--set-tos 0x10
+done
+
+for i in $TCP_HIGHTHROUGHPUT; do
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --source-port $i \
+			--set-tos 0x08
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --destination-port $i \
+			--set-tos 0x08
+done
+for i in $UDP_HIGHTHROUGHPUT; do
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol udp --source-port $i \
+			--set-tos 0x08
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol udp --destination-port $i \
+			--set-tos 0x08
+done
+
+for i in $TCP_HIGHRELIABILITY; do
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --source-port $i \
+			--set-tos 0x04
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --destination-port $i \
+			--set-tos 0x04
+done
+for i in $TCP_HIGHRELIABILITY; do
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol udp --source-port $i \
+			--set-tos 0x04
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol udp --destination-port $i \
+			--set-tos 0x04
+done
+
+for i in $TCP_CHEAP; do
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --source-port $i \
+			--set-tos 0x02
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --destination-port $i \
+			--set-tos 0x02
+done
+for i in $UDP_CHEAP; do
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol udp --destination-port $i \
+			--set-tos 0x02
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol udp --source-port $i \
+			--set-tos 0x02
+done
+
+if [ $TCP_SYN_RELIABLE = yes ]; then
+	$IPTABLES -t mangle --append PREROUTING --jump TOS \
+			--protocol tcp --syn \
+			--set-tos 0x04
+fi

@@ -1,0 +1,234 @@
+# This function sets or clears a feature for an interface
+#
+# usage:
+#  if_feature featurename value
+# eg:
+#  if_feature ip_forwarding 1
+function if_feature() {
+	if [ -z "${if}" ]; then
+        	echo $2 >/proc/sys/net/ipv4/conf/all/$1
+	else
+        	echo $2 >/proc/sys/net/ipv4/conf/${if}/$1
+	fi
+}
+
+# Don't process the rest of the rules until the interface is up
+function on_demand() {
+	if [ ! -d /proc/sys/net/ipv4/conf/${if} -a ! -z "$ONBOOT" ]; then
+		exit 0;
+	fi	
+}
+
+# Always process the rest of the rules until the interface is up
+function on_startup() {
+  # Nothing
+  local $dummy
+}
+
+# This function creates a new chain
+# usage:
+#  new_chain chainname
+function new_chain() {
+	iptables_with_table --delete-chain $1 &>/dev/null
+	iptables_with_table --new $1
+}
+
+
+# import a ruleset if it's not already imported
+# usage:
+#  import ruleset
+# eg:
+#  import foo
+#
+# Note: You shouldn't ever need to call this function directly, it's called
+#       by "policy"
+function import {
+	local RULENAME i
+	LANG=C 	# needed to fix bash counting lower case letters in an [A-Z]
+	case $1 in
+		[A-Z]*)
+			# Assume anything beginning with a capital is
+			# a builtin
+			return
+			;;
+		*)
+			for i in $IMPORTED; do
+				if [ "$1" == "$i" ]; then
+				return
+			fi
+			done
+			IMPORTED="$IMPORTED $1"
+			if [ -x ruleset.d/${1}.rule ]; then
+				$SHELL ruleset.d/${1}.rule
+				subsubstatus Loaded ${1}
+			else
+				subsubstatus FAILED TO LOAD ${1}
+				$IPTABLES --new ${1}
+			fi
+			;;
+	esac
+}
+
+function iptables_with_table {
+	local TARGET table ARGS JUMP
+	COMMAND=$1
+	shift
+	TARGET=$1
+	shift
+	ARGS=
+	JUMP=
+	table=
+	while [ $# -gt 0 ]; do
+		if [ "$1" = "-j" -o "$1" = "--jump" ]; then
+			shift
+			JUMP=$1
+		elif [ "$1" = "-t" -o "$1" = "--table" ]; then
+			shift
+			echo \*\*\* TABLE found: $1 \*\*\*
+			table=$1
+		else
+			ARGS="$ARGS $1"
+		fi
+		shift
+	done
+	if [ -z "$table" ]; then
+		case $TARGET:$JUMP in
+			POSTROUTING:*|*-postrouting-out:*|PREROUTING:*|*-prerouting-in:*)
+				table=nat
+				;;
+			*:MARK|*:TOS|*:TTL)
+				table=mangle
+				;;
+			*)
+				table=filter
+				;;
+		esac
+	fi
+	if [ ! -z "$JUMP" ]; then
+		JUMP="--jump $JUMP"
+	fi
+	$IPTABLES -t $table $COMMAND $TARGET $JUMP $ARGS || 
+		echo Failed: $IPTABLES -t $table $COMMAND $TARGET $JUMP $ARGS
+}
+
+# given a target, execute a chain
+# usage:
+#  apply_policy target iptablesargs
+# eg:
+#  apply_policy ACCEPT --source-port 10
+#
+# Note: You shouldn't ever need to call this function directly, it's called
+#       by "policy"
+function apply_policy {
+	local TARGET table
+	TARGET=$1
+	shift
+	if [ ! -z "${if}" ]; then
+		TARGET=${if}-${TARGET}
+	fi
+	iptables_with_table --append $TARGET $* 
+}
+
+# policy - add a new rule
+# usage
+#  policy chain target iptablesargs
+# eg:
+#  policy INPUT ACCEPT --source 0.0.0.0/0
+# 
+# Notes:
+#  * This is the function you should be using to add new rules.  You should
+#    use this instead of calling iptables directly.
+#  * If the destination policy isn't created, then it will read it from
+#    the ruleset directory.  ie: it loads targets on the fly
+#  * This has aliases for some commonly confused targets.
+#  * This function calls "import" (above) and "apply_policy" (also above)
+function policy() {
+	CHAIN=$1
+	shift
+	TARGET=$1
+	shift
+	import $TARGET
+	case $TARGET in
+		ACCEPT|ALLOW|PERMIT)
+			if [ "$CHAIN" = "forward-in" ]; then
+				apply_policy $CHAIN $* --jump fw-forward-out
+			else
+				apply_policy $CHAIN $* --jump ACCEPT
+			fi
+			;;
+		REJECT)
+			apply_policy $CHAIN $* --jump REJECT
+			;;
+		DENY|BLACKHOLE|DROP)
+			apply_policy $CHAIN $* --jump DROP
+			;;
+		MASQ*)
+			apply_policy $CHAIN $* --jump MASQUERADE
+			;;
+		*)
+			apply_policy $CHAIN --jump $TARGET $*
+	esac
+}
+
+# Flush *ALL* rules in all chains in all tables.
+function flush_rules() {
+	cat /proc/net/ip_tables_names | while read table; do
+		$IPTABLES -t $table --flush 
+		$IPTABLES -t $table --delete-chain 
+	done
+}
+
+function load_interface_rules() {
+	if=$1
+	shift
+	if [ -z "$1" ]; then
+		rulename=$if
+	else
+		rulename=$1
+	fi
+	export rulename
+
+        substatus $if
+
+	new_chain ${if}-in
+	iptables_with_table --append fw-in --in-interface ${if} \
+		--jump ${if}-in
+
+	new_chain ${if}-out
+	iptables_with_table --append fw-out --out-interface ${if} \
+		--jump ${if}-out
+
+	#iptables_with_table --delete-chain ${if}-out -t nat 2>/dev/null
+	#iptables_with_table --new ${if}-out -t nat
+	#iptables_with_table --append OUTPUT --out-interface ${if} \
+	#	-t nat \
+	#	--jump ${if}-out
+
+	new_chain ${if}-forward-in
+	new_chain ${if}-forward-out
+	iptables_with_table --append fw-forward --in-interface ${if} \
+		--jump ${if}-forward-in
+	iptables_with_table --append fw-forward-out --out-interface ${if} \
+		--jump ${if}-forward-out
+
+	new_chain ${if}-postrouting-out
+	iptables_with_table --append fw-postrouting-out --out-interface ${if} \
+		--jump ${if}-postrouting-out
+
+	new_chain ${if}-prerouting-in
+	iptables_with_table --append fw-prerouting-in --in-interface ${if} \
+		--jump ${if}-prerouting-in
+
+	# Start a new environment
+	. $CONFDIR/interfaces.d/${rulename}.if $*
+	
+}
+
+function init_rules() {
+	# List of rulesets that are already imported.
+
+	LOADED_RULES=$(${IPTABLES} --list | grep ^Chain | awk '{print $2}')
+
+	IMPORTED="${LOADED_RULES}"
+}
+

@@ -1,0 +1,82 @@
+2006-04-03: Jamie Curtis
+
+* Convert from SF CVS to source.meta.net.nz SVN
+
+* Merge in IT Partners linuxserver-firewall changes
+  - log-prefix now has "FW/" prepended for all logs
+  - Allow for FHS / Debian directory layouts
+  - Check interfaces.d exists and contains files
+    - Fix bug that allowed execution to continue if interfaces.d didn't
+      exist !
+
+* Move hosts.d to $CONFDIR, not $BASEDIR (they are user configured host
+  overrides !)
+
+* Changed syntax of how $IPTABLES was set in rulset.functions for 
+  consistency.
+
+* Added simple command line options, -v or --version for the current version
+  or anything else tells you to read the man page.
+
+* Move all sanity tests to the top of the script so we don't start building
+  the firewall only to find we don't have something later !
+
+* Removed all.host from hosts.d that used to point all OUTPUT to the classify 
+  ruleset. Playing with TOS bits can cause problems on todays broken Intarweb.
+
+* Made modprobe that may file use "-q" to supress error output.
+
+* Made the documentation and firewall be built by the Makefile so they all
+  refer to the correct file locations.
+
+* Split up Makefile install into install-bin and install-conf, added 
+  install-doc and made install depend on all of them.
+
+* Reverted installing rulsets +x as we don't believe it's required.
+
+Sometime before 2006-04-01: Probably Perry Lorier
+
+* Fixed 2.4/2.6 issue, will now work on both versions
+
+* Fixed bash LANG problem that broke a check
+
+* Don't complain if there are no host exceptions.
+
+2003-06-07: Perry Lorier
+* Fixed nasty bug with FORWARD chain (which nobody used anyway, sigh)
+
+* Added some new rulesets (routing-trust) and cleaned up some others
+ 
+* Added some more examples to the classes
+
+* Added support for more of the mangle table targets
+
+* Fixed bug with leaving empty chains around the place
+
+* Fixed bug with spewing errors about not being able to delete chains
+
+* Default log level is now very low, except for End of * messages, added
+comment to these to hint that these are a configuration error.
+
+2002-09-18: Perry Lorier
+
+* Moved all the examples out of interfaces.d into classes.d and recommended
+people create symlinks from interfaces.d into classes.d
+
+* added ifup and ifdown firewall scripts to add and delete an interface.  
+This involved a lot of restructuring.  a series of new chains were created
+called "in-fw", "out-fw" etc, the various interface chains are linked off
+these.  ifup and ifdown can take a second argument which is the "fake" name
+of the interface.  for example if you have a wireless network card:
+ # start up at home
+ ifup eth0 home
+ # ... play ...
+ # leave home
+ ifdown eth0
+ # get to work
+ ifup eth0 work
+ # ... work ...
+ # leave work
+ ifdown eth0
+ # etc
+

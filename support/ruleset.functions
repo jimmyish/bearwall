@@ -1,0 +1,8 @@
+RULE=$(basename $0 | sed 's/.rule$//g')
+
+export IPTABLES=${IPTABLES:-/sbin/iptables}
+
+$IPTABLES --delete-chain $RULE 2>/dev/null
+$IPTABLES --new $RULE
+
+. support/common.functions

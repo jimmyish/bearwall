@@ -1,0 +1,28 @@
+#
+# Each of these files creates a policy which can be bound to a range of
+# IP's.
+#
+# Rule name: Trusting TCP
+# 
+# Policy:
+# Disallows connections to ports:
+#   98 - Linuxconf
+#  111 - Portmapper
+#  859
+#  864
+#  869 -
+#  893
+# 2288 - lockd.
+#
+# Note: You should bind a seperate UDP and ICMP rule as well.
+
+. support/ruleset.functions
+
+$IPTABLES --append $RULE --protocol \! tcp --jump RETURN
+
+# Reject the rest.
+polite_reject $RULE --protocol udp \
+	-m multiport --source-ports 58,98,859,864,869,893,2288
+                  
+# Allow all others
+$IPTABLES --append $RULE -p tcp --jump ACCEPT

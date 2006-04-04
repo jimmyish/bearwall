@@ -1,0 +1,40 @@
+# Always run these rules
+on_startup
+
+# People we allow to talk to us
+#policy in martians
+policy in ACCEPT --protocol 41 # allow IPv6 on IPv4
+policy in ACCEPT --protocol tcp --destination-port ssh 
+policy in ACCEPT --protocol tcp --destination-port ftp 
+policy in ACCEPT --protocol tcp --destination-port auth
+policy in ACCEPT --protocol udp --destination-port 11111
+policy in ACCEPT --protocol udp --destination-port 22222
+policy in tcp-strict
+policy in udp-strict
+policy in icmp-trust
+policy in multicast-trust
+
+# Masquerade the internal network out  CHANGEME
+#policy postrouting-out MASQUERADE \
+#        --source 10.1.1.0/24
+
+# Portforward port 1234 to 1.2.3.4:5678
+#policy prerouting-in DNAT --protocol tcp --dport 1234 --to 1.2.3.4:5678
+
+# Having issues with stupid people breaking path MTU?
+# policy out TCPMSS --protocol tcp --destination 1.2.3.4
+
+# People we will talk to
+policy out ACCEPT 
+
+policy forward-in ACCEPT
+policy forward-out ACCEPT
+
+if_feature rp_filter 1 		 # Enable Reverse Router Filtering
+if_feature accept_redirects 0 	 # Accept Redirects
+if_feature accept_source_route 0 # Accept Source Routes
+if_feature bootp_relay 0         # Dont forward bootp requests
+if_feature forwarding 1          # forward packets arriving on this interface
+if_feature log_martians 0        # log martians?
+if_feature send_redirects 1      # Send redirects?
+

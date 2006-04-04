@@ -1,0 +1,18 @@
+Information about this is available at:
+ http://www.wlug.org.nz/PerrysFirewallingScript
+
+Make sure you either have all the modules compiled in, or have automatic
+module probing enabled in your kernel.  (Why does debian's UML have neither?)
+
+See the above link for some FAQ's
+
+For a quick start, if your internal interface is eth0 and your external 
+interface is ppp0:
+ 
+ cd interfaces.d
+ ln -s ../classes.d/internal eth0.if
+ ln -s ../classes.d/external ppp0.if
+ ln -s ../classes.d/loopback lo.if
+ ./firewall
+
+and edit classes.c/external and change the line below "CHANGEME"

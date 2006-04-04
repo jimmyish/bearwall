@@ -1,0 +1,19 @@
+
+# For ethernet we're really open, we rely on "rp_filter" to catch bogus 
+# packets.
+
+on_startup
+
+policy in ACCEPT 
+policy out ACCEPT 
+policy forward-in ACCEPT
+policy forward-out ACCEPT 
+
+if_feature rp_filter 1 		 # Enable Reverse Router Filtering
+if_feature accept_redirects 1 	 # Accept Redirects
+if_feature accept_source_route 1 # Accept Source Routes
+if_feature bootp_relay 0         # Dont forward bootp requests
+if_feature forwarding 1          # forward packets arriving at this interface
+if_feature log_martians 0        # log martians?
+if_feature send_redirects 1      # Send redirects?
+

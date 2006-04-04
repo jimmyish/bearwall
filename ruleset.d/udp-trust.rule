@@ -1,0 +1,30 @@
+#
+# Each of these files creates a policy which can be bound to a range of
+# IP's.
+#
+# Rule name: Trusting UDP
+# 
+# Policy:
+# Allows udp except on ports:
+#   69 - Trivial FTP
+#  111 - Sun RPC / Portmapper
+#  836 -
+#  847 -
+#  857 -  NFS and friends.
+#  862 -
+#  867   - 
+# 2049 - nfsd            
+#  
+# Note: This rule specifically doesn't disallow traffic on:
+#  talkd/ntalkd nor does it disallow it on the time services.   
+
+. support/ruleset.functions
+
+$IPTABLES --append $RULE --protocol \! udp --jump RETURN
+
+# Disallow
+polite_reject $RULE --protocol udp \
+	-m multiport --destination-ports 69,111,836,847,857,862,867,2049
+
+$IPTABLES --append $RULE -p udp --jump ACCEPT
+

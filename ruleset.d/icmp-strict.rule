@@ -1,0 +1,15 @@
+#
+# Policy: ICMP Strict
+# Description:
+#  Disallow any incoming packets
+
+. support/ruleset.functions
+
+# Ignore non ICMP
+$IPTABLES --append $RULE --protocol \! icmp --jump RETURN
+
+# Accept any packets that were created by us
+$IPTABLES --append $RULE -m state --state ESTABLISHED,RELATED --jump ACCEPT
+
+# Deny everything else.
+polite_reject $RULE

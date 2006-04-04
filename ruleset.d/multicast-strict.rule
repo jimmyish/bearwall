@@ -1,0 +1,20 @@
+#
+# Policy: Multicast Strict
+# 
+# Note:
+#  You can't use reject here otherwise smurf style problems occur (even with
+#  rate limiting)
+
+. support/ruleset.functions
+
+# Ignore non Multicast
+$IPTABLES --append $RULE --destination 224.0.0.0/4 --jump RETURN
+
+# TCP over Multicast doesn't work 
+polite_deny $RULE --protocol tcp
+
+# Allow multicast routing protocol.
+$IPTABLES --append $RULE --destination 224.0.0.1 --protocol 2 --jump ACCEPT
+
+# Reject everything else.
+polite_deny $RULE

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+cd /usr/local/firewall
+
+if [ -z "$1" ]; then
+	echo Usage: $(basename $0) interface
+	echo 
+	echo Deconfigures firewalling for interface
+	exit 1
+fi
+
+. support/common.functions
+
+if [ ! -f /proc/net/ip_tables_names ]; then
+	echo No iptables in kernel, have you run the main firewall script yet?
+	exit 1
+fi
+
+
+if=$1
+
+. support/firewall.functions
+init-rules
+
+for i in INPUT OUTPUT FORWARD PREROUTING POSTROUTING; do
+	$IPTABLES --delete ${i} $(
+		$IPTABLES --list ${i} --line-numbers | 
+			grep fw-${if} | 
+			awk '{print $1}'
+	)
+	delete_chain ${i}-in
+	delete_chain ${i}-out
+	delete_chain ${i}-forward-in
+	delete_chain ${i}-forward-out
+	delete_chain ${i}-prerouting-in
+	delete_chain ${i}-postrouting-out
+done
+
+logger -t firewall $if down

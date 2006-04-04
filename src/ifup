@@ -1,0 +1,34 @@
+#!/bin/bash
+
+cd /usr/local/firewall
+
+if [ -z "$1" ]; then
+	echo Usage: $(basename $0) interface rulesetname
+	echo 
+	echo Configures firewalling for interface
+	echo
+	echo eg:
+	echo  ifup ppp0 my-isp
+	echo will bind interfaces.d/my-isp.if to ppp0
+	exit 1
+fi
+
+. support/common.functions
+
+if [ ! -f /proc/net/ip_tables_names ]; then
+	echo No iptables in kernel, have you run the main firewall script yet?
+	exit 1
+fi
+
+
+if=$1
+
+. support/firewall.functions
+
+init_rules
+
+# Load this interface and tell it it is being loaded later
+unset ONBOOT
+load_interface_rules $if $2
+
+logger -t firewall $if up

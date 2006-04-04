@@ -1,0 +1,36 @@
+#
+# This is an outgoing rule that prevents system accounts from accessing the
+# network in unintenional ways.  For instance, only allowing SMTP servers to
+# connect out using SMTP.
+#
+# This isn't brilliant security, but it does seem to help.
+#
+# Usage:
+#  policy out parania
+
+. support/ruleset.functions
+
+# Allow connections to localhost
+$IPTABLES --append $RULE --destination 127.0.0.0/8 --jump ACCEPT
+
+# Allow related
+$IPTABLES --append $RULE -m match --state ESTABLISHED,RELATED --jump ACCEPT
+
+# Allow DNS
+$IPTABLES --append $RULE --protocol udp --destination-port 53  --jump ACCEPT
+
+# Allow root
+$IPTABLES --append $RULE --uid-owner 0 --jump ACCEPT
+
+# Allow SMTP for the mail user
+$IPTABLES --append $RULE --uid-owner mail \
+	--protocol tcp --destination-port 25 \
+	--jump ACCEPT
+
+# Allow DNS for the named user
+$IPTABLES --append $RULE --uid-owner named \
+	--protocol tcp --destination-port 53 \
+	--jump ACCEPT
+
+# Reject everything else
+$IPTABLES --append $RULE --jump REJECT

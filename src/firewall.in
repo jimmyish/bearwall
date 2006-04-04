@@ -1,0 +1,149 @@
+#!/bin/bash
+
+BASEDIR=@BASEDIR@
+CONFDIR=@CONFDIR@
+
+VERSION="1.0"
+
+export VERSION BASEDIR CONFDIR
+
+# Check for any command line options (which we don't want !)
+if [ $# -gt "0" ] ; then
+	case "$1" in
+		-v|--version)
+			echo Perrys firewalling script, version $VERSION.
+			exit
+			;;
+		*)
+			echo $(basename $0) takes no options.
+			echo For more information read the man page.
+			exit
+			;;
+	esac
+fi
+
+cd $BASEDIR
+
+#IPTABLES="iptables_test"
+IPTABLES="/sbin/iptables"
+
+function iptables_test() {
+	echo "IPTABLES: /sbin/iptables $*"
+}
+
+export IPTABLES
+export -f iptables_test
+
+. support/common.functions
+. support/firewall.functions
+
+# Check we can understand how to load modules for this kernel before we start
+
+case `uname -r` in
+	2.6.*) EXT=ko;;
+	2.4.*) EXT=o;;
+	*) echo Unsupported kernel version `uname -r`; exit ;;
+esac
+
+# Check we actually have interface configuration before we start
+
+if [ -d $CONFDIR/interfaces.d/ ]; then
+	INTFILES=`ls -1 $CONFDIR/interfaces.d/*.if 2>/dev/null | wc -l` 
+	if [ $INTFILES -eq 0 ] ; then
+		echo No interfaces defined in $CONFDIR/interfaces.d, aborting.
+		exit
+	fi
+else
+	echo No interfaces.d directory in $CONFDIR/, aborting.
+	exit
+fi
+
+# Check iptables is available and loaded
+
+if [ ! -f /proc/net/ip_tables_names ]; then
+	modprobe -q ip_tables
+fi
+
+if [ ! -f /proc/net/ip_tables_names ]; then
+	echo No iptables in kernel?
+	exit
+fi
+
+# Now we can start building the firewall !
+
+flush_rules
+init_rules
+
+# Set up some reasonable default policies.  These rules should never be
+# met, as a logging rule above them should be used.
+iptables_with_table --policy INPUT DROP
+iptables_with_table --policy OUTPUT DROP
+iptables_with_table --policy FORWARD DROP
+
+new_chain fw-in
+new_chain fw-out
+new_chain fw-forward
+new_chain fw-prerouting-in
+new_chain fw-postrouting-out
+new_chain fw-forward-out
+iptables_with_table --append INPUT --jump fw-in
+iptables_with_table --append OUTPUT --jump fw-out
+iptables_with_table --append FORWARD --jump fw-forward
+iptables_with_table --append PREROUTING --jump fw-prerouting-in
+iptables_with_table --append POSTROUTING --jump fw-postrouting-out
+
+# This is used to add things to individual hosts.  Some hosts may be allowed
+# to connect to certain ports, or, alternatively, may not be allowed to.
+status Configuring host overrides
+for hosts in $CONFDIR/hosts.d/*.host; do
+	if [ $hosts == "$CONFDIR/hosts.d/*.host" ]; then
+		continue
+	fi
+	substatus $hosts
+	. $hosts
+done
+
+# Read in the util functions that interface scripts will use
+. support/firewall.functions
+
+# This is the meat of the script.
+# For each interface (defined in the $CONFDIR/interfaces.d directory)
+#  Create some chains, "if-in", "if-out", "if-forward-in", "if-forward-out"
+#  "if-postrouting-out"
+#  Then source the file in that directory.
+# most of your rules will be defined in these files
+status Configuring interfaces
+for intf in $CONFDIR/interfaces.d/*.if; do
+	if=$(basename $intf| sed s/\.if$//)
+
+	export ONBOOT=1
+	load_interface_rules $if 
+done
+
+# Now, at the end of each rule write something to log that the packet reached
+# the end.  These packets shouldn't really get here, you really should handle
+# all packets in the directories.
+for i in INPUT OUTPUT FORWARD; do
+	$IPTABLES --append $i \
+		-m limit --limit 5/s \
+		--jump LOG \
+		--log-prefix "FW/End of ${i} -- see FAQ:" 
+done
+
+status Loading connection tracking helper modules
+
+for i in /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/ip_conntrack_*.$EXT; do
+	module=$(basename ${i/.$EXT/})
+	substatus ${module/ip_conntrack_/}
+	modprobe $module
+done
+
+status Loading NAT helper modules
+for i in /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/ip_nat_*.$EXT; do
+	module=$(basename ${i/.$EXT/})
+	substatus ${module/ip_nat_/}
+	modprobe $module
+done
+
+logger Firewall loaded
+status Firewall loaded
