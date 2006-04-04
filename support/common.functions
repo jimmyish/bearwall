@@ -32,27 +32,20 @@ function polite_reject() {
 	polite_target $RULE REJECT $*
 }
 
+# Deny is an ipchains ism, DROP is the new target.
+# Keep this around because of the number of things that may use it.
 function polite_deny() {
 	local RULE
 	RULE=$1
 	shift
-	polite_target $RULE DENY $*
+	polite_target $RULE DROP $*
 }
 
-function polite_deny() {
+function polite_drop() {
 	local RULE
 	RULE=$1
-	if [ ! -z "$if" ]; then
-		RULE=${if}-${RULE}
-	fi
 	shift
-	$IPTABLES --append $RULE \
-		--match limit --limit 2/s \
-		--jump LOG --log-prefix "FW/${RULE}: " \
-		$*
-	$IPTABLES --append $RULE \
-		--jump DROP \
-		$*
+	polite_target $RULE DROP $*
 }
 
 function status() {

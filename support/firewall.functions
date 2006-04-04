@@ -58,13 +58,8 @@ function import {
 			fi
 			done
 			IMPORTED="$IMPORTED $1"
-			if [ -x ruleset.d/${1}.rule ]; then
-				$SHELL ruleset.d/${1}.rule
-				subsubstatus Loaded ${1}
-			else
-				subsubstatus FAILED TO LOAD ${1}
-				$IPTABLES --new ${1}
-			fi
+			$SHELL ruleset.d/${1}.rule
+			subsubstatus Loaded ${1}
 			;;
 	esac
 }

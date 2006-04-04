@@ -11,10 +11,10 @@
 $IPTABLES --append $RULE --destination 224.0.0.0/4 --jump RETURN
 
 # TCP over Multicast doesn't work 
-polite_deny $RULE --protocol tcp
+polite_drop $RULE --protocol tcp
 
 # Allow multicast routing protocol.
 $IPTABLES --append $RULE --destination 224.0.0.1 --protocol 2 --jump ACCEPT
 
-# Reject everything else.
-polite_deny $RULE
+# Drop everything else.
+polite_drop $RULE

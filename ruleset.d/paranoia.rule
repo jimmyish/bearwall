@@ -14,23 +14,23 @@
 $IPTABLES --append $RULE --destination 127.0.0.0/8 --jump ACCEPT
 
 # Allow related
-$IPTABLES --append $RULE -m match --state ESTABLISHED,RELATED --jump ACCEPT
+$IPTABLES --append $RULE -m state --state ESTABLISHED,RELATED --jump ACCEPT
 
 # Allow DNS
 $IPTABLES --append $RULE --protocol udp --destination-port 53  --jump ACCEPT
 
 # Allow root
-$IPTABLES --append $RULE --uid-owner 0 --jump ACCEPT
+$IPTABLES --append $RULE -m owner --uid-owner 0 --jump ACCEPT
 
 # Allow SMTP for the mail user
-$IPTABLES --append $RULE --uid-owner mail \
+$IPTABLES --append $RULE -m owner --uid-owner mail \
 	--protocol tcp --destination-port 25 \
 	--jump ACCEPT
 
 # Allow DNS for the named user
-$IPTABLES --append $RULE --uid-owner named \
+$IPTABLES --append $RULE -m owner --uid-owner named \
 	--protocol tcp --destination-port 53 \
 	--jump ACCEPT
 
 # Reject everything else
-$IPTABLES --append $RULE --jump REJECT
+polite_reject $RULE

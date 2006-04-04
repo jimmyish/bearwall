@@ -35,7 +35,18 @@
 * Split up Makefile install into install-bin and install-conf, added 
   install-doc and made install depend on all of them.
 
-* Reverted installing rulsets +x as we don't believe it's required.
+* Got rid of inforced requirement for rulesets to be +x
+
+* Reverted installing rulsets +x as it's no longer required.
+
+* Fixed typo's in paranoia ruleset
+
+* Fixed polite_deny to target to DROP and removed stupid extra re-defined
+  copy of polite_deny.
+
+* Added polite_drop target to follow IPtables naming.
+
+* Converted rulesets to use polite_drop not deny.
 
 Sometime before 2006-04-01: Probably Perry Lorier
 
