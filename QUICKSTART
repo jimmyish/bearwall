@@ -6,13 +6,23 @@ module probing enabled in your kernel.  (Why does debian's UML have neither?)
 
 See the above link for some FAQ's
 
+To build and install, just run 
+
+	make install
+
+This will place the firewall script in /usr/local/firewall and the 
+configuration in /usr/local/etc/linuxserver-firewall
+
+If you run Debian or Ubuntu (or any other .deb based distro) please consider
+using a prebuilt .deb
+
 For a quick start, if your internal interface is eth0 and your external 
 interface is ppp0:
  
- cd interfaces.d
+ cd /usr/local/etc/linuxserver-firewall/interfaces.d
  ln -s ../classes.d/internal eth0.if
  ln -s ../classes.d/external ppp0.if
  ln -s ../classes.d/loopback lo.if
  ./firewall
 
-and edit classes.c/external and change the line below "CHANGEME"
+and edit classes.d/external and change the line below "CHANGEME"
