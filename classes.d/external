@@ -22,7 +22,8 @@ policy in multicast-trust
 #policy prerouting-in DNAT --protocol tcp --dport 1234 --to 1.2.3.4:5678
 
 # Having issues with stupid people breaking path MTU?
-# policy out TCPMSS --protocol tcp --destination 1.2.3.4
+# policy out TCPMSS --protocol tcp --set-mss 576 --tcp-flags SYN,RST SYN \
+# 	--destination 1.2.3.4
 
 # People we will talk to
 policy out ACCEPT 

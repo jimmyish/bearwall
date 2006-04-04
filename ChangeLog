@@ -48,6 +48,9 @@
 
 * Converted rulesets to use polite_drop not deny.
 
+* Fixed example of TCPMSS hacking in classes.d/external so it would actually
+  work !
+
 Sometime before 2006-04-01: Probably Perry Lorier
 
 * Fixed 2.4/2.6 issue, will now work on both versions
