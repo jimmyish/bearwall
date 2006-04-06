@@ -91,16 +91,16 @@ install: install-bin install-conf install-doc
 release:
 	@rm -f $(tmpdir)
 	@mkdir -p $(tmpdir)
-	@svn export . $(tmpdir)/linuxserver-firewall-r$(r)
+	@svn export . $(tmpdir)/linuxserver-firewall-$(VERSION)
 	@sed -e 's#VERSION=".*"#VERSION="$(VERSION)"#g' \
 		-e 's#REVISION=".*"#REVISION="$(r)"#g' \
-		$(tmpdir)/linuxserver-firewall-r$(r)/src/firewall.in \
-		> $(tmpdir)/linuxserver-firewall-r$(r)/src/firewall.$$
-	@mv $(tmpdir)/linuxserver-firewall-r$(r)/src/firewall.$$ \
-		$(tmpdir)/linuxserver-firewall-r$(r)/src/firewall.in
-	@cd $(tmpdir); tar cjf $(pwd)/linuxserver-firewall-r$(r).tar.bz2 \
-		linuxserver-firewall-r$(r)/
-	@cd $(tmpdir); tar czf $(pwd)/linuxserver-firewall-r$(r).tar.gz \
-		linuxserver-firewall-r$(r)/
+		$(tmpdir)/linuxserver-firewall-$(VERSION)/src/firewall.in \
+		> $(tmpdir)/linuxserver-firewall-$(VERSION)/src/firewall.$$
+	@mv $(tmpdir)/linuxserver-firewall-$(VERSION)/src/firewall.$$ \
+		$(tmpdir)/linuxserver-firewall-$(VERSION)/src/firewall.in
+	@cd $(tmpdir); tar cjf $(pwd)/linuxserver-firewall-$(VERSION).tar.bz2 \
+		linuxserver-firewall-$(VERSION)/
+	@cd $(tmpdir); tar czf $(pwd)/linuxserver-firewall-$(VERSION).tar.gz \
+		linuxserver-firewall-$(VERSION)/
 	@rm -rf $(tmpdir)
 
