@@ -1,6 +1,9 @@
-
-# For ethernet we're really open, we rely on "rp_filter" to catch bogus 
-# packets.
+#
+# Example class suitable for application to your internal interface
+# eg. eth0
+# 
+# We assume that all computers on this interface are trusted and rely on
+# "rp_filter" to catch bogus packets.
 
 on_startup
 

@@ -1,33 +1,43 @@
+#
+# Example class suitable for application to your external internet interface
+# eg. ppp0
+# 
+# All traffic leaving via this interface is MASQUERADED and all 
+
 # Always run these rules
 on_startup
 
 # People we allow to talk to us
-#policy in martians
+policy in martians
 policy in ACCEPT --protocol 41 # allow IPv6 on IPv4
 policy in ACCEPT --protocol tcp --destination-port ssh 
-policy in ACCEPT --protocol tcp --destination-port ftp 
-policy in ACCEPT --protocol tcp --destination-port auth
-policy in ACCEPT --protocol udp --destination-port 11111
-policy in ACCEPT --protocol udp --destination-port 22222
 policy in tcp-strict
 policy in udp-strict
 policy in icmp-trust
 policy in multicast-trust
 
-# Masquerade the internal network out  CHANGEME
-#policy postrouting-out MASQUERADE \
-#        --source 10.1.1.0/24
+# Masquerade any traffic leaving onto the IP of this interface
+policy postrouting-out MASQUERADE
+# If you want to restrict external access further you can add an extra
+# option such as '--source 10.1.1.0/24' (no quotes) to the above command
 
-# Portforward port 1234 to 1.2.3.4:5678
+# Advanced Configuration Examples
+
+# Portforward external port 1234 to 1.2.3.4:5678
 #policy prerouting-in DNAT --protocol tcp --dport 1234 --to 1.2.3.4:5678
 
 # Having issues with stupid people breaking path MTU?
 # policy out TCPMSS --protocol tcp --set-mss 576 --tcp-flags SYN,RST SYN \
 # 	--destination 1.2.3.4
 
-# People we will talk to
+# Allow any traffic generated on this machine out to the Internet
 policy out ACCEPT 
 
+# Keep the internet clean - block known MS worm traffic
+policy forward-in reject-ms
+policy forward-out reject-ms
+
+# Act as a good little router for all other traffic
 policy forward-in ACCEPT
 policy forward-out ACCEPT
 

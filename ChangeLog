@@ -1,3 +1,10 @@
+2006-04-06: Matt Brown
+
+* Reworked example external interface class
+  - Don't allow FTP/ident and wand/wansd from the Internet by default
+  - Don't allow MS worm traffic to transit to/from the Internet
+  - Removed the need to specify the source networks to MASQUERADE for
+
 2006-04-03: Jamie Curtis
 
 * Convert from SF CVS to source.meta.net.nz SVN
