@@ -1,0 +1,30 @@
+#
+# This ruleset blocks ports used by Microsoft protocols that have been 
+# affected by worms or other vulnerabilities in the past.
+#
+# $Id:$
+# 
+# Windows Networking - Samba / RPC
+#  TCP Ports:    135:139, 445, 593
+#  UDP Ports:    135:139, 445
+# MS-SQL
+#  TCP Ports:    1434
+# Sasser Worm
+#  TCP Ports:    5554, 9996
+#  UDP Ports:    5554, 9996
+#
+# Usage:
+#  policy forward-in reject-ms 
+#  policy forward-out reject-ms
+
+. support/ruleset.functions
+
+polite_reject $RULE --protocol udp \
+	-m multiport --destination-ports 137:139,445,5554,9996
+polite_reject $RULE --protocol tcp \
+	-m multiport --destination-ports 137:139,445,593,1434,5554,9996
+
+polite_reject $RULE --protocol udp \
+	-m multiport --source-ports 137:139,445,5554,9996
+polite_reject $RULE --protocol tcp \
+	-m multiport --source-ports 137:139,445,593,1434,5554,9996
