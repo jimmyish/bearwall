@@ -4,6 +4,7 @@ BASEDIR=@BASEDIR@
 CONFDIR=@CONFDIR@
 
 VERSION="1.0"
+REVISION="HEAD"
 
 export VERSION BASEDIR CONFDIR
 
@@ -11,7 +12,7 @@ export VERSION BASEDIR CONFDIR
 if [ $# -gt "0" ] ; then
 	case "$1" in
 		-v|--version)
-			echo Perrys firewalling script, version $VERSION.
+			echo "Perrys firewalling script, version $VERSION (r$REVISION)."
 			exit
 			;;
 		*)

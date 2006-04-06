@@ -1,3 +1,8 @@
+VERSION=1.0
+r := $(shell svnversion -nc . | sed -e 's/^[^:]*://;s/[A-Za-z]//')
+tmpdir := $(shell mktemp -ud)
+pwd := $(shell pwd)
+
 DESTDIR ?=
 
 BINDIR ?= /usr/local/sbin
@@ -28,6 +33,7 @@ all:
 
 clean:
 	@rm -f src/firewall doc/linuxserver-firewall.8
+	@rm -f linuxserver-firewall-r*.tar.*
 
 install-bin: all
 
@@ -81,3 +87,20 @@ install-doc: all
 		doc/linuxserver-firewall.8 $(DESTDIR)$(MANDIR)/man8
 
 install: install-bin install-conf install-doc
+
+release:
+	@rm -f $(tmpdir)
+	@mkdir -p $(tmpdir)
+	@svn export . $(tmpdir)/linuxserver-firewall-r$(r)
+	@sed -e 's#VERSION=".*"#VERSION="$(VERSION)"#g' \
+		-e 's#REVISION=".*"#REVISION="$(r)"#g' \
+		$(tmpdir)/linuxserver-firewall-r$(r)/src/firewall.in \
+		> $(tmpdir)/linuxserver-firewall-r$(r)/src/firewall.$$
+	@mv $(tmpdir)/linuxserver-firewall-r$(r)/src/firewall.$$ \
+		$(tmpdir)/linuxserver-firewall-r$(r)/src/firewall.in
+	@cd $(tmpdir); tar cjf $(pwd)/linuxserver-firewall-r$(r).tar.bz2 \
+		linuxserver-firewall-r$(r)/
+	@cd $(tmpdir); tar czf $(pwd)/linuxserver-firewall-r$(r).tar.gz \
+		linuxserver-firewall-r$(r)/
+	@rm -rf $(tmpdir)
+
