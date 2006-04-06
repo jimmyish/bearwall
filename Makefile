@@ -33,7 +33,7 @@ all:
 
 clean:
 	@rm -f src/firewall doc/linuxserver-firewall.8
-	@rm -f linuxserver-firewall-r*.tar.*
+	@rm -f linuxserver-firewall-*.tar.*
 
 install-bin: all
 
