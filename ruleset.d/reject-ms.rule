@@ -2,7 +2,7 @@
 # This ruleset blocks ports used by Microsoft protocols that have been 
 # affected by worms or other vulnerabilities in the past.
 #
-# $Id:$
+# $Id$
 # 
 # Windows Networking - Samba / RPC
 #  TCP Ports:    135:139, 445, 593
@@ -20,11 +20,11 @@
 . support/ruleset.functions
 
 polite_reject $RULE --protocol udp \
-	-m multiport --destination-ports 137:139,445,5554,9996
+	-m multiport --destination-ports 137,138,139,445,5554,9996
 polite_reject $RULE --protocol tcp \
-	-m multiport --destination-ports 137:139,445,593,1434,5554,9996
+	-m multiport --destination-ports 137,138,139,445,593,1434,5554,9996
 
 polite_reject $RULE --protocol udp \
-	-m multiport --source-ports 137:139,445,5554,9996
+	-m multiport --source-ports 137,138,139,445,5554,9996
 polite_reject $RULE --protocol tcp \
-	-m multiport --source-ports 137:139,445,593,1434,5554,9996
+	-m multiport --source-ports 137,138,139,445,593,1434,5554,9996
