@@ -1,3 +1,4 @@
 * IPv6 (now that 2.6 has all the required bits)
 * Fix output so that when run from init.d important stuff gets logged
 * Allow the use of rulesets in the forwarding chains
+* Some smarter rulesets (ECN? NFS?)
