@@ -25,4 +25,3 @@ interface is ppp0:
  ln -s ../classes.d/loopback lo.if
  ./firewall
 
-and edit classes.d/external and change the line below "CHANGEME"
