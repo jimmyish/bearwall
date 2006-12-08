@@ -70,11 +70,16 @@ function iptables_with_table {
 	shift
 	TARGET=$1
 	shift
+	cmd=
 	ARGS=
 	JUMP=
 	table=
 	while [ $# -gt 0 ]; do
-		if [ "$1" = "-j" -o "$1" = "--jump" ]; then
+		if [ 	   "$1" = "-j" -o "$1" = "--jump" \
+			-o "$1" = "-N" -o "$1" = "--new-chain" \
+			-o "$1" = "-X" -o "$1" = "--delete-chain" \
+			]; then
+			cmd=$1
 			shift
 			JUMP=$1
 		elif [ "$1" = "-t" -o "$1" = "--table" ]; then
@@ -91,7 +96,7 @@ function iptables_with_table {
 			POSTROUTING:*|*-postrouting-out:*|PREROUTING:*|*-prerouting-in:*)
 				table=nat
 				;;
-			*:MARK|*:TOS|*:TTL)
+			*:*MARK|*:TOS|*:TTL)
 				table=mangle
 				;;
 			*)
@@ -100,7 +105,7 @@ function iptables_with_table {
 		esac
 	fi
 	if [ ! -z "$JUMP" ]; then
-		JUMP="--jump $JUMP"
+		JUMP="$cmd $JUMP"
 	fi
 	$IPTABLES -t $table $COMMAND $TARGET $JUMP $ARGS || 
 		echo Failed: $IPTABLES -t $table $COMMAND $TARGET $JUMP $ARGS
@@ -189,9 +194,17 @@ function load_interface_rules() {
 	iptables_with_table --append fw-in --in-interface ${if} \
 		--jump ${if}-in
 
+	new_chain ${if}-mangle-in
+	iptables_with_table --append mangle-in --in-interface {$if} \
+		--jump ${if}-mangle-in
+
 	new_chain ${if}-out
 	iptables_with_table --append fw-out --out-interface ${if} \
 		--jump ${if}-out
+
+	new_chain ${if}-mangle-out
+	iptables_with_table --append mangle-out --out-interface ${if} \
+		--jump ${if}-mangle-out
 
 	#iptables_with_table --delete-chain ${if}-out -t nat 2>/dev/null
 	#iptables_with_table --new ${if}-out -t nat
