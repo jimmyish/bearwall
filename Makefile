@@ -1,4 +1,4 @@
-VERSION=1.0
+VERSION=1.01
 r := $(shell svnversion -nc . | sed -e 's/^[^:]*://;s/[A-Za-z]//')
 tmpdir := $(shell mktemp -ud)
 pwd := $(shell pwd)

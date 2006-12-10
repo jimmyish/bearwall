@@ -3,6 +3,8 @@
 BASEDIR=@BASEDIR@
 CONFDIR=@CONFDIR@
 
+# Don't change these directly, they are filled in by make release
+# when a new release is built.
 VERSION="1.01"
 REVISION="HEAD"
 
