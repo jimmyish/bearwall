@@ -233,8 +233,16 @@ function load_interface_rules() {
 		--jump ${if}-mangle-fw-in
 
 	new_chain ${if}-mangle-fw-out
-	iptables_with_table --insert mangle-fw-out --in-interface ${if} \
+	iptables_with_table --insert mangle-fw-out --out-interface ${if} \
 		--jump ${if}-mangle-fw-out
+
+	new_chain ${if}-mangle-pre-in
+	iptables_with_table --insert mangle-pre-in --in-interface ${if} \
+		--jump ${if}-mangle-pre-in
+
+	new_chain ${if}-mangle-post-out
+	iptables_with_table --insert mangle-post-out --out-interface ${if} \
+		--jump ${if}-mangle-post-out
 
 	new_chain ${if}-postrouting-out
 	iptables_with_table --append fw-postrouting-out --out-interface ${if} \
