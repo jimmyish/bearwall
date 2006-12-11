@@ -78,6 +78,7 @@ function iptables_with_table {
 		if [ 	   "$1" = "-j" -o "$1" = "--jump" \
 			-o "$1" = "-N" -o "$1" = "--new-chain" \
 			-o "$1" = "-X" -o "$1" = "--delete-chain" \
+			-o "$1" = "-A" -o "$1" = "--append" \
 			]; then
 			cmd=$1
 			shift
@@ -96,7 +97,7 @@ function iptables_with_table {
 			POSTROUTING:*|*-postrouting-out:*|PREROUTING:*|*-prerouting-in:*)
 				table=nat
 				;;
-			*:*MARK|*:TOS|*:TTL)
+			*:*MARK|*:TOS|*:TTL|*-mangle-*|mangle-*)
 				table=mangle
 				;;
 			*)
@@ -195,7 +196,7 @@ function load_interface_rules() {
 		--jump ${if}-in
 
 	new_chain ${if}-mangle-in
-	iptables_with_table --append mangle-in --in-interface {$if} \
+	iptables_with_table --append mangle-in --in-interface ${if} \
 		--jump ${if}-mangle-in
 
 	new_chain ${if}-out
