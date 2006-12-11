@@ -91,13 +91,18 @@ new_chain fw-postrouting-out
 new_chain fw-forward-out
 new_chain mangle-in
 new_chain mangle-out
+new_chain mangle-forward-in
+new_chain mangle-forward-out
 iptables_with_table --append INPUT --jump fw-in
 iptables_with_table --append OUTPUT --jump fw-out
 iptables_with_table --append FORWARD --jump fw-forward
 iptables_with_table --append PREROUTING --jump fw-prerouting-in
 iptables_with_table --append POSTROUTING --jump fw-postrouting-out
+
 iptables_with_table --jump mangle-in --append INPUT
 iptables_with_table --jump mangle-out --append OUTPUT
+iptables_with_table --jump mangle-forward-in --append FORWARD
+iptables_with_table --jump mangle-forward-out --append mangle-forward-in
 
 # This is used to add things to individual hosts.  Some hosts may be allowed
 # to connect to certain ports, or, alternatively, may not be allowed to.

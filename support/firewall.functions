@@ -79,6 +79,7 @@ function iptables_with_table {
 			-o "$1" = "-N" -o "$1" = "--new-chain" \
 			-o "$1" = "-X" -o "$1" = "--delete-chain" \
 			-o "$1" = "-A" -o "$1" = "--append" \
+			-o "$1" = "-A" -o "$1" = "--insert" \
 			]; then
 			cmd=$1
 			shift
@@ -151,11 +152,19 @@ function policy() {
 	import $TARGET
 	case $TARGET in
 		ACCEPT|ALLOW|PERMIT)
-			if [ "$CHAIN" = "forward-in" ]; then
-				apply_policy $CHAIN $* --jump fw-forward-out
-			else
-				apply_policy $CHAIN $* --jump ACCEPT
-			fi
+			case $CHAIN; in
+				forward-in)
+					apply_policy $CHAIN $* \
+						--jump fw-forward-out
+					;;
+				*-fw-in)
+					apply_policy $CHAIN $* \
+						--jump ${CHAIN%-fw-in}-fw-out
+					;;
+				*)
+					apply_policy $CHAIN $* --jump ACCEPT
+					;;
+			esac
 			;;
 		REJECT)
 			apply_policy $CHAIN $* --jump REJECT
@@ -207,18 +216,25 @@ function load_interface_rules() {
 	iptables_with_table --append mangle-out --out-interface ${if} \
 		--jump ${if}-mangle-out
 
-	#iptables_with_table --delete-chain ${if}-out -t nat 2>/dev/null
-	#iptables_with_table --new ${if}-out -t nat
-	#iptables_with_table --append OUTPUT --out-interface ${if} \
-	#	-t nat \
-	#	--jump ${if}-out
-
 	new_chain ${if}-forward-in
-	new_chain ${if}-forward-out
 	iptables_with_table --append fw-forward --in-interface ${if} \
 		--jump ${if}-forward-in
+
+	new_chain ${if}-forward-out
 	iptables_with_table --append fw-forward-out --out-interface ${if} \
 		--jump ${if}-forward-out
+
+	# We "insert" here because it doesn't matter which order the
+	# rules are in mangle-fw-out (they only match on in-interface).
+	# We need to "insert" and not "append" because the last rule in
+	# this table is a catchall that sends it to mangle-fw-out
+	new_chain ${if}-mangle-fw-in
+	iptables_with_table --insert mangle-fw-in --in-interface ${if} \
+		--jump ${if}-mangle-fw-in
+
+	new_chain ${if}-mangle-fw-out
+	iptables_with_table --insert mangle-fw-out --in-interface ${if} \
+		--jump ${if}-mangle-fw-out
 
 	new_chain ${if}-postrouting-out
 	iptables_with_table --append fw-postrouting-out --out-interface ${if} \
