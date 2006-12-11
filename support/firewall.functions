@@ -152,7 +152,7 @@ function policy() {
 	import $TARGET
 	case $TARGET in
 		ACCEPT|ALLOW|PERMIT)
-			case $CHAIN; in
+			case $CHAIN in
 				forward-in)
 					apply_policy $CHAIN $* \
 						--jump fw-forward-out
