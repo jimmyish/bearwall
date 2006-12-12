@@ -1,5 +1,5 @@
 VERSION=1.03
-r := $(shell svnversion -nc . | sed -e 's/^[^:]*://;s/[A-Za-z]//')
+r = $(shell svnversion -nc . | sed -e 's/^[^:]*://;s/[A-Za-z]//')
 tmpdir := $(shell mktemp -ud)
 pwd := $(shell pwd)
 
