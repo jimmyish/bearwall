@@ -75,16 +75,16 @@ function iptables_with_table {
 	JUMP=
 	table=
 	while [ $# -gt 0 ]; do
-		if [ 	   "$1" = "-j" -o "$1" = "--jump" \
-			-o "$1" = "-N" -o "$1" = "--new-chain" \
-			-o "$1" = "-X" -o "$1" = "--delete-chain" \
-			-o "$1" = "-A" -o "$1" = "--append" \
-			-o "$1" = "-A" -o "$1" = "--insert" \
+		if [ 	   "-j" = "$1" -o "--jump" = "$1" \
+			-o "-N" = "$1" -o "--new-chain" = "$1" \
+			-o "-X" = "$1" -o"--delete-chain" = "$1" \
+			-o "-A" = "$1" -o "--append" = "$1" \
+			-o "-A" = "$1" -o "--insert" = "$1" \
 			]; then
 			cmd=$1
 			shift
 			JUMP=$1
-		elif [ "$1" = "-t" -o "$1" = "--table" ]; then
+		elif [ "-t" = "$1" -o "--table" = "$1" ]; then
 			shift
 			echo \*\*\* TABLE found: $1 \*\*\*
 			table=$1
