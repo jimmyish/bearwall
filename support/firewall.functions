@@ -77,7 +77,7 @@ function iptables_with_table {
 	while [ $# -gt 0 ]; do
 		if [ 	   "-j" = "$1" -o "--jump" = "$1" \
 			-o "-N" = "$1" -o "--new-chain" = "$1" \
-			-o "-X" = "$1" -o"--delete-chain" = "$1" \
+			-o "-X" = "$1" -o "--delete-chain" = "$1" \
 			-o "-A" = "$1" -o "--append" = "$1" \
 			-o "-A" = "$1" -o "--insert" = "$1" \
 			]; then
