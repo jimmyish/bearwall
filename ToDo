@@ -5,3 +5,4 @@
 * Command line option to use iptables-test debugging 
 * Move stopping the firewall from the init script into the main firewall script
 * Some smarter rulesets (ECN? NFS?)
+* ULOG support, not LOG
