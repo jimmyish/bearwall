@@ -149,18 +149,23 @@ for i in INPUT OUTPUT FORWARD; do
 done
 
 status Loading connection tracking helper modules
-
-for i in /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/ip_conntrack_*.$EXT; do
-	module=$(basename ${i/.$EXT/})
-	substatus ${module/ip_conntrack_/}
-	modprobe $module
+for i in /lib/modules/`uname -r`/kernel/net/{,ipv4/}netfilter/{nf,ip}_conntrack_*.$EXT; do
+	if [ -f $i ] ; then
+		module=$(basename ${i/.$EXT/})
+		# Strip {nf,ip}_conntrack_
+		substatus ${module:13}
+		modprobe $module
+	fi
 done
 
 status Loading NAT helper modules
-for i in /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/ip_nat_*.$EXT; do
-	module=$(basename ${i/.$EXT/})
-	substatus ${module/ip_nat_/}
-	modprobe $module
+for i in /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/{nf,ip}_nat_*.$EXT; do
+	if [ -f $i ] ; then
+		module=$(basename ${i/.$EXT/})
+		# Strip {nf,ip}_nat_
+		substatus ${module:7}
+		modprobe $module
+	fi
 done
 
 logger Firewall loaded
