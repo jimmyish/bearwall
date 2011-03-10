@@ -18,10 +18,10 @@
 
 . support/ruleset.functions
 
-$IPTABLES --append $RULE --protocol \! tcp --jump RETURN
+$IPTABLES --append $RULE \! --protocol tcp --jump RETURN
 
 # Reject the rest.
-polite_reject $RULE --protocol udp \
+polite_reject $RULE --protocol tcp \
 	-m multiport --source-ports 58,98,859,864,869,893,2288
                   
 # Allow all others

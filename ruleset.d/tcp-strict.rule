@@ -6,7 +6,7 @@
 . support/ruleset.functions
 
 # Ignore non TCP
-$IPTABLES --append $RULE --protocol \! tcp --jump RETURN
+$IPTABLES --append $RULE \! --protocol tcp --jump RETURN
 
 # Accept any packets that were created by us
 $IPTABLES --append $RULE -m state --state ESTABLISHED,RELATED --jump ACCEPT

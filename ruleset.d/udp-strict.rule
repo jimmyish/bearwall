@@ -6,7 +6,7 @@
 . support/ruleset.functions
 
 # Ignore non UDP
-$IPTABLES --append $RULE --protocol \! udp --jump RETURN
+$IPTABLES --append $RULE \! --protocol udp --jump RETURN
 
 # Accept any packet to the dynamically assigned port range
 $IPTABLES --append $RULE \

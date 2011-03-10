@@ -20,7 +20,7 @@
 
 . support/ruleset.functions
 
-$IPTABLES --append $RULE --protocol \! udp --jump RETURN
+$IPTABLES --append $RULE \! --protocol udp --jump RETURN
 
 # Disallow
 polite_reject $RULE --protocol udp \

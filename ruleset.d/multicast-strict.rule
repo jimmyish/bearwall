@@ -8,7 +8,7 @@
 . support/ruleset.functions
 
 # Ignore non Multicast
-$IPTABLES --append $RULE --destination 224.0.0.0/4 --jump RETURN
+$IPTABLES --append $RULE \! --destination 224.0.0.0/4 --jump RETURN
 
 # TCP over Multicast doesn't work 
 polite_drop $RULE --protocol tcp
