@@ -58,7 +58,7 @@ function import {
 			fi
 			done
 			IMPORTED="$IMPORTED $1"
-			$SHELL ruleset.d/${1}.rule
+			$BASH ruleset.d/${1}.rule
 			subsubstatus Loaded ${1}
 			;;
 	esac
