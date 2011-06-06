@@ -27,11 +27,36 @@ fi
 
 cd $BASEDIR
 
-#IPTABLES="iptables_test"
-IPTABLES="/sbin/iptables"
+IPTABLES="iptables_test"
+#IPTABLES="/sbin/ip6tables"
 
 function iptables_test() {
-	echo "IPTABLES: /sbin/iptables $*"
+
+	# Anything to the nat table is for v4 only
+	echo "$*" | grep -q "\-t nat"
+	if [ $? -eq 0 ]; then
+		/sbin/iptables $*
+		return
+	fi
+
+
+	# Anything with a v6 address is for v6 only
+	echo "$*" | grep -q -P '((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?'
+	if [ $? -eq 0 ]; then
+		/sbin/ip6tables $*
+		return
+	fi
+
+	# Anything with a v4 address is for v6 only
+	echo "$*" | grep -q -P '\d+\.\d+\.\d+\.\d+'
+	if [ $? -eq 0 ]; then
+		/sbin/iptables $*
+		return
+	fi
+
+	# If we get here, then put in both
+	/sbin/iptables $*
+	/sbin/ip6tables $*
 }
 
 export IPTABLES
@@ -145,7 +170,7 @@ for i in INPUT OUTPUT FORWARD; do
 	$IPTABLES --append $i \
 		-m limit --limit 5/s \
 		--jump LOG \
-		--log-prefix "FW/End of ${i} -- see FAQ:" 
+		--log-prefix "FW/EOF-${i}" 
 done
 
 status Loading connection tracking helper modules
@@ -154,7 +179,7 @@ for i in /lib/modules/`uname -r`/kernel/net/{,ipv4/}netfilter/{nf,ip}_conntrack_
 		module=$(basename ${i/.$EXT/})
 		# Strip {nf,ip}_conntrack_
 		substatus ${module:13}
-		modprobe $module
+		#modprobe $module
 	fi
 done
 
@@ -164,7 +189,7 @@ for i in /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/{nf,ip}_nat_*.$EXT; d
 		module=$(basename ${i/.$EXT/})
 		# Strip {nf,ip}_nat_
 		substatus ${module:7}
-		modprobe $module
+		#modprobe $module
 	fi
 done
 

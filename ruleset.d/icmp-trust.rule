@@ -6,7 +6,8 @@
 . support/ruleset.functions
 
 # Ignore non ICMP
-$IPTABLES --append $RULE \! --protocol icmp --jump RETURN
+#$IPTABLES --append $RULE \! --protocol icmp --jump RETURN
 
-$IPTABLES --append $RULE --jump ACCEPT
+$IPTABLES --append $RULE --protocol icmp --jump ACCEPT
+$IPTABLES --append $RULE --protocol icmpv6 --jump ACCEPT
 

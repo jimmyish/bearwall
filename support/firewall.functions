@@ -5,6 +5,7 @@
 # eg:
 #  if_feature ip_forwarding 1
 function if_feature() {
+	return
 	if [ -z "${if}" ]; then
         	echo $2 >/proc/sys/net/ipv4/conf/all/$1
 	else
