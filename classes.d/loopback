@@ -15,6 +15,8 @@ if_feature rp_filter 1 		 # Enable Reverse Router Filtering
 if_feature accept_redirects 0 	 # Accept Redirects
 if_feature accept_source_route 0 # Accept Source Routes
 if_feature bootp_relay 0         # Dont forward bootp requests
+if_feature accept_ra 0           # Accept IPv6 Router Advertisments 
+                                 # (overridden if v6 forwarding is enabled)
 if_feature forwarding 0          # forwarding
 if_feature log_martians 0        # log martians?
 if_feature send_redirects 0      # Send redirects?

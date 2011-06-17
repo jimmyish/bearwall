@@ -1,12 +1,12 @@
 VERSION=1.05
 
-DESTDIR ?=
+DESTDIR ?= /usr/local
 
-BINDIR ?= /usr/local/sbin
-SHARDIR ?= /usr/local/share
-ETCDIR ?= /usr/local/etc
+BINDIR ?= $(DESTDIR)/sbin
+SHARDIR ?= $(DESTDIR)/share
+ETCDIR ?= $(DESTDIR)/etc
 
-PKGNAME=linuxserver-firewall
+PKGNAME=bearwall
 IPTABLES=iptables
 
 BASEDIR ?= $(SHARDIR)/$(PKGNAME)
@@ -24,66 +24,67 @@ all: build-firewall
 build-firewall:
 	@sed -e s#@BASEDIR@#$(BASEDIR)#g -e s#@CONFDIR@#$(CONFDIR)#g \
 		src/firewall.in \
-		>src/firewall
+		>src/$(PKGNAME)
 	@sed -e s#@BASEDIR@#$(subst -,\\\\-,$(BASEDIR))#g \
 		-e s#@CONFDIR@#$(subst -,\\\\-,$(CONFDIR))#g \
-		doc/linuxserver-firewall.8.in \
-		>doc/linuxserver-firewall.8
+		-e s#@PKGNAME@#$(subst -,\\\\-,$(PKGNAME))#g \
+		doc/firewall.8.in \
+		>doc/$(PKGNAME).8
 
 clean:
-	@rm -f src/firewall doc/linuxserver-firewall.8
+	@rm -f src/$(PKGNAME) doc/$(PKGNAME).8
 	@rm -f $(PKGNAME)-*.tar.*
 
 install-bin: all
 
 	install -D --group=root --mode=755 --owner=root \
-		src/firewall $(DESTDIR)$(BINDIR)/firewall
+		src/$(PKGNAME) $(BINDIR)/$(PKGNAME)
 
 	install -d --group=root --mode=755 --owner=root \
-		$(DESTDIR)$(BASEDIR)/ruleset.d
+		$(BASEDIR)/ruleset.d
 	for i in $(RULESET); \
 		do install -D --group=root --mode=644 --owner=root \
-		$$i $(DESTDIR)$(BASEDIR)/$$i; \
+		$$i $(BASEDIR)/$$i; \
 		done
 		
 	install -d --group=root --mode=755 --owner=root \
-		$(DESTDIR)$(BASEDIR)/support
+		$(BASEDIR)/support
 	for i in $(SUPPORT); \
 		do install -D --group=root --mode=644 --owner=root \
-		$$i $(DESTDIR)$(BASEDIR)/$$i; \
+		$$i $(BASEDIR)/$$i; \
 		done
 
 install-conf: all
 
 	install -d --group=root --mode=755 --owner=root \
-		$(DESTDIR)$(CONFDIR)/hosts.d
+		$(CONFDIR)/hosts.d
 	for i in $(HOSTS); \
 		do install -D --group=root --mode=744 --owner=root \
-		$$i $(DESTDIR)$(CONFDIR)/$$i; \
+		$$i $(CONFDIR)/$$i; \
 		done
 
 	install -d --group=root --mode=755 --owner=root \
-		$(DESTDIR)$(CONFDIR)/classes.d
+		$(CONFDIR)/classes.d
 	for i in $(CLASSES); \
 		do install -D --group=root --mode=644 --owner=root \
-		$$i $(DESTDIR)$(CONFDIR)/$$i; \
+		$$i $(CONFDIR)/$$i; \
 		done
 
 	install -d --group=root --mode=755 --owner=root \
-		$(DESTDIR)$(CONFDIR)/interfaces.d
+		$(CONFDIR)/interfaces.d
 	for i in $(INTERFACES); \
 		do install -D --group=root --mode=644 --owner=root \
-		$$i $(DESTDIR)$(CONFDIR)/$$i; \
+		$$i $(CONFDIR)/$$i; \
 		done
 
 install-doc: all
 	
 	install -d --group=root --mode=755 --owner=root \
-		$(DESTDIR)$(MANDIR)/man8
+		$(MANDIR)/man8
 	install --group=root --mode=644 --owner=root \
-		doc/firewall.8 $(DESTDIR)$(MANDIR)/man8
+		doc/$(PKGNAME).8 $(MANDIR)/man8
 	install --group=root --mode=644 --owner=root \
-		doc/linuxserver-firewall.8 $(DESTDIR)$(MANDIR)/man8
+		doc/$(PKGNAME).8 $(MANDIR)/man8
 
 install: install-bin install-conf install-doc
 
@@ -101,8 +102,8 @@ all: build-rev
 build-rev: build-firewall
 	@sed -e 's#VERSION=".*"#VERSION="$(VERSION)"#g' \
 		-e 's#REVISION=".*"#REVISION="$(r)"#g' \
-		src/firewall > src/firewall.$$
-	@mv src/firewall.$$ src/firewall
+		src/$(PKGNAME) > src/$(PKGNAME).$$
+	@mv src/$(PKGNAME).$$ src/$(PKGNAME)
 
 r := $(shell ./revision-info.sh)
 tmpdir := $(shell mktemp -ud)
@@ -115,15 +116,15 @@ release:
 	@sed -e 's#VERSION=".*"#VERSION="$(VERSION)"#g' \
 		-e 's#REVISION=".*"#REVISION="$(r)"#g' \
 		$(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.in \
-		> $(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.$$
+		> $(tmpdir)/$(PKGNAME)-$(VERSION)/src/$(PKGNAME).$$
 	@sed --in-place '/#---#---#---#/,$$d' \
 		$(tmpdir)/$(PKGNAME)-$(VERSION)/Makefile
-	@mv $(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.$$ \
+	@mv $(tmpdir)/$(PKGNAME)-$(VERSION)/src/$(PKGNAME).$$ \
 		$(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.in
 	@cd $(tmpdir); tar cjf $(pwd)/$(PKGNAME)-$(VERSION).tar.bz2 \
 		$(PKGNAME)-$(VERSION)/
 	@cd $(tmpdir); tar czf $(pwd)/$(PKGNAME)-$(VERSION).tar.gz \
 		$(PKGNAME)-$(VERSION)/
-	@rm -rf $(tmpdir)
+	@rm -rf $(tmpdir) $(tmpdir)/revision-info.sh
 
 .PHONY: release build-rev

@@ -9,17 +9,17 @@
 .\" .TP = indented paragraph, with a paragraph heading. PP = end paragraph
 
 .\" manpage heading - name, man section, date
-.TH linuxserver-firewall 8 "04 April 2006"
+.TH @PKGNAME@ 8 "04 April 2006"
 
 .SH NAME
-firewall \- front-end script for configuring an iptables firewall
+@PKGNAME@ \- front-end script for configuring an iptables firewall
 
 .SH SYNOPSIS
 .B firewall [OPTION]
 
 .SH DESCRIPTION
 The
-.B firewall
+.B @PKGNAME@
 script, when run, reads its configuration files and sets up appropriate
 iptables(8) chains and rules.
 .PP
@@ -70,7 +70,7 @@ The files in the
 directory provide rules that apply to all packets on all interfaces.
 This may be useful if you want to do "type of service" differentiation.
 All these files will be loaded automatically each time the
-.B firewall
+.B @PKGNAME@
 script is run.
 
 .TP
@@ -231,7 +231,7 @@ directory.
 .PP
 .B Don't forget
 to re-run
-.B /usr/sbin/firewall
+.B /usr/sbin/@PKGNAME@
 for the rules to be re-loaded.
 .PP
 .B More Advanced Example
