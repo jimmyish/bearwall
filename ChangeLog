@@ -1,8 +1,16 @@
+2011-06-17: Jamie Curtis
+
+* Migrate Makefile to doing stuff nicely with git
+* Fix make release for new git world.
+
+2011-04-07: Jamie Curtis
+
+* Fix bug with importing rulesets with $SHEL instead of $BASH
+
 2011-03-10: Jamie Curtis
 
 * Changed iptables rules around to avoid depricated ordering
 * Fixed bugs in some of the default rulesets
-
 
 2009-12-11: Jamie Curtis
 

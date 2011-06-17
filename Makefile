@@ -1,7 +1,4 @@
 VERSION=1.05
-r = $(shell svnversion -nc . | sed -e 's/^[^:]*://;s/[A-Za-z]//')
-tmpdir := $(shell mktemp -ud)
-pwd := $(shell pwd)
 
 DESTDIR ?= /usr/local
 
@@ -22,7 +19,9 @@ CLASSES := $(wildcard classes.d/*)
 INTERFACES := $(wildcard interfaces.d/*)
 SUPPORT := $(wildcard support/*)
 
-all: 
+all: build-firewall
+
+build-firewall:
 	@sed -e s#@BASEDIR@#$(BASEDIR)#g -e s#@CONFDIR@#$(CONFDIR)#g \
 		src/firewall.in \
 		>src/$(PKGNAME)
@@ -89,19 +88,43 @@ install-doc: all
 
 install: install-bin install-conf install-doc
 
+.PHONY: clean all build-firewall install install-bin install-conf install-doc
+
+#---#---#---#
+#
+# All text after the marker above is removed during a "make release" as we
+# put the revision info into the file at release time and it doesn't need 
+# to be done each build
+#
+
+all: build-rev
+
+build-rev: build-firewall
+	@sed -e 's#VERSION=".*"#VERSION="$(VERSION)"#g' \
+		-e 's#REVISION=".*"#REVISION="$(r)"#g' \
+		src/firewall > src/firewall.$$
+	@mv src/firewall.$$ src/firewall
+
+r := $(shell ./revision-info.sh)
+tmpdir := $(shell mktemp -ud)
+pwd := $(shell pwd)
+
 release:
-	@rm -f $(tmpdir)
-	@mkdir -p $(tmpdir)
-	@svn export . $(tmpdir)/$(PKGNAME)-$(VERSION)
+	@./revision-info.sh -c
+	@mkdir -p $(tmpdir)/$(PKGNAME)-$(VERSION)
+	@git archive master | tar -x -C $(tmpdir)/$(PKGNAME)-$(VERSION)
 	@sed -e 's#VERSION=".*"#VERSION="$(VERSION)"#g' \
 		-e 's#REVISION=".*"#REVISION="$(r)"#g' \
 		$(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.in \
-		> $(tmpdir)/$(PKGNAME)-$(VERSION)/src/$(PKGNAME).$$
-	@mv $(tmpdir)/$(PKGNAME)-$(VERSION)/src/$(PKGNAME).$$ \
+		> $(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.$$
+	@sed --in-place '/#---#---#---#/,$$d' \
+		$(tmpdir)/$(PKGNAME)-$(VERSION)/Makefile
+	@mv $(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.$$ \
 		$(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.in
 	@cd $(tmpdir); tar cjf $(pwd)/$(PKGNAME)-$(VERSION).tar.bz2 \
 		$(PKGNAME)-$(VERSION)/
 	@cd $(tmpdir); tar czf $(pwd)/$(PKGNAME)-$(VERSION).tar.gz \
 		$(PKGNAME)-$(VERSION)/
-	@rm -rf $(tmpdir)
+	@rm -rf $(tmpdir) ./revision-info.sh
 
+.PHONY: release build-rev
