@@ -1,7 +1,7 @@
 #
-# Policy: ICMP Strict
+# Policy: ICMP Trust
 # Description:
-#  Disallow any incoming packets
+#  Allow all ICMP
 
 . support/ruleset.functions
 

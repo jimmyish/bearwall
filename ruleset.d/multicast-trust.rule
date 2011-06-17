@@ -1,5 +1,5 @@
 #
-# Policy: Multicast Strict
+# Policy: Multicast Trust
 # 
 # Note:
 #  You can't use reject here otherwise smurf style problems occur (even with
