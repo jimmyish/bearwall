@@ -1,2 +1,279 @@
-.\" so = see other? man(1) will include the contents of that file here.
-.so man8/linuxserver-firewall.8
+.\" This is a comment. comments are good.
+.\" utf-8 notes: use \- if you really mean an ascii dash (eg, for things that
+.\"  someone might copy-n-paste for a command), otherwise - might get
+.\"  turned into a shorter "‐" unicode n-dash.
+.\" Quick rules:
+.\" .TH is the title heading for this manpage, .SH = section heading
+.\" .B = bold, .R = roman, .I = italics.
+.\" .BR = bold 1st term then roman 2nd term (with no intervening space), etc
+.\" .TP = indented paragraph, with a paragraph heading. PP = end paragraph
+
+.\" manpage heading - name, man section, date
+.TH @PKGNAME@ 8 "04 April 2006"
+
+.SH NAME
+@PKGNAME@ \- front-end script for configuring an iptables firewall
+
+.SH SYNOPSIS
+.B firewall [OPTION]
+
+.SH DESCRIPTION
+The
+.B @PKGNAME@
+script, when run, reads its configuration files and sets up appropriate
+iptables(8) chains and rules.
+.PP
+The only options currently supported are the following informative options.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+display help
+.TP
+\fB\-v\fR, \fB\-\-version\fR
+display current version
+.PP
+.SH FILES
+The following directory contains files that need to be modified/created
+for your server.
+.\" indent paragraph with label
+.TP
+.I @CONFDIR@/interfaces.d/*.if
+The
+.B interfaces.d
+directory contain a file for each interface you want
+configured. Typically you would create a symlink (for example, named
+.IR eth0.if )
+that points to one of the templates in classes.d (such as
+.IR external )
+if you want to use one of the defaults.
+
+.PP
+The following directories do not need to be modified unless you
+want to change the default behaviour of the
+.BR firewall .
+
+.TP 
+.I @CONFDIR@/classes.d/*
+The
+.B classes.d
+directory contains templates for different types of interfaces. Example
+templates include
+.IR external ,
+.IR internal ,
+.I loopback
+and
+.IR vpn .
+
+.TP
+.I @CONFDIR@/hosts.d/*.host
+The files in the
+.B hosts.d
+directory provide rules that apply to all packets on all interfaces.
+This may be useful if you want to do "type of service" differentiation.
+All these files will be loaded automatically each time the
+.B @PKGNAME@
+script is run.
+
+.TP
+.I @BASEDIR@/ruleset.d/*.rule
+The files in the
+.B ruleset.d
+directory specify default rules (for example, accepting/denying traffic on
+particular ports) for use in the
+.I *.if
+interface files. See the following section for more details on the default
+rule-sets.
+
+
+.SH RULES
+.B Default Rule-sets
+.TP
+.I classify.rule
+Classifies traffic where qualities (eg interactive, bulk) can be
+guessed from port numbers.
+.TP
+.I icmp\-strict.rule
+Rejects incoming ICMP packets.
+
+.TP 
+.I icmp\-trust.rule
+Allows all ICMP packets. Use if you trust the network that this interface is
+attached to.
+
+.TP 
+.I martians.rule
+Reject packets with a source address in private RFC1918 space.
+
+.TP 
+.I multicast\-strict.rule
+Only allow packets on multicast addresses if they are IGMP.
+
+.TP 
+.I multicast\-trust.rule
+Like multicast\-strict, but additionally allows OSPF routing packets.
+This assumes that you trust the network that this interface is attached to.
+
+.TP 
+.I tcp\-strict.rule
+Disallow incoming TCP packets except for established connections (that is,
+connections started locally).
+
+.TP 
+.I tcp\-trust.rule
+Allows all incoming TCP packets.
+.\" except for certain ports?
+
+.TP 
+.I udp\-strict.rule
+Only allows UDP packets in the dynamically generated port range 1024-5000.
+
+.TP 
+.I udp\-trust.rule
+Allows most UDP packets. Disallowed ports include TFTP, RPC, and NFS-related.
+
+.PP
+.B Other rules
+
+.TP
+polite_reject
+Reject these packets, with "polite" logging (only log up to 2 packets per
+second instead of logging every packet to syslog).
+
+.TP
+polite_drop
+Drop these packets, with "polite" logging (as above).
+
+
+.SH INTERFACE RULES
+This describes the syntax of the rules in the
+.I interface.d/*.if
+files.
+.TP
+.B policy
+.I chain
+.I action
+.br .\" line break
+where
+.I chain
+is one of
+.BR in ,
+.BR out ,
+.BR forward-in ,
+or
+.BR forward-out ,
+and
+.I action
+is one of
+.I named rule-set
+(without the ".rule"),
+.BR ACCEPT ,
+.B REJECT
+or
+.BR DENY .
+.br
+ACCEPT, REJECT and DENY can also be followed by standard iptables(8) rule
+options (such as \-\-protocol
+.IR n ).
+
+.TP
+.B if_feature
+.I feature
+.I value
+.br
+where feature is one of the settings supported by your kernel (look in
+/proc/sys/net/ipv4/conf/all/), and value is the appropriate integer
+for that feature.
+.br
+See /usr/src/linux/Documentation/filesystems/proc.txt
+for a description of all the possible IPv4 settings and their values.
+
+
+.SH EXAMPLES
+Remember, that the order that rules are specified in the interfaces.d/*
+files matters.
+.RS 4 .\" increase indent
+# don't allow private addresses in this interface
+.br
+.br
+policy in martians 
+.br
+policy in ACCEPT \-\-protocol 41 # allow IPv6 on IPv4
+.br
+policy in ACCEPT \-\-protocol tcp \-\-destination\-port ssh
+.br
+policy in ACCEPT \-\-protocol tcp \-\-destination\-port smtp
+.br
+policy in tcp\-strict
+.br
+policy in udp\-strict
+.br
+policy in icmp\-strict
+.br
+policy in REJECT # don't allow anything else
+.br
+.br
+policy out martians
+.br
+policy out ACCEPT         # who we will talk to
+.br
+.br
+# forward packets arriving on this interface?
+.br
+if_feature forwarding 0
+.br
+# log martian packets to syslog?
+.br
+if_feature log_martians 1
+.RE .\" move left margin back to previous
+.PP
+See the sample entries in the
+.I classes.d
+directory.
+.PP
+.B Don't forget
+to re-run
+.B /usr/sbin/@PKGNAME@
+for the rules to be re-loaded.
+.PP
+.B More Advanced Example
+.br
+This creates an empty ruleset with no rules in it, and then we can use
+iptables as normal to add/delete rules to the chain. (This doesn't
+hide the abstraction on top of iptables).
+In a newly created
+.IR ruleset.d/ssh_syn.rule :
+.PP
+.RS 4
+# automatically create an empty 'ssh_syn' ruleset we can use
+.br
+. support/ruleset.functions
+.RE
+.PP
+And in our
+.I @CONFDIR@/interfaces.d/eth0.if
+file:
+.PP
+.RS 4
+\...
+.br
+policy in ssh_syn \-\-protocol tcp \\
+.br
+   \-\-destination\-port ssh \-\-syn
+.br
+\...
+.RE
+.PP
+Then to add an ip address that we do not want to have ssh access:
+.PP
+.RS 4
+iptables --append ssh_syn --source $ip --jump DROP
+.RE
+	
+.SH SEE ALSO
+.I iptables(8)
+
+
+.SH NOTES
+The firewall package was written by Perry Lorier and licensed under the
+GPL (v2 or higher). This package was Debian-ised by Craig Box.
+This manual page was written for the Debian package by John McPherson and 
+updated for version 1.0 by Jamie Curtis.

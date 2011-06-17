@@ -1,15 +1,46 @@
 # This function sets or clears a feature for an interface
 #
 # usage:
-#  if_feature featurename value
+#  if_feature [-4|-6] featurename value
 # eg:
 #  if_feature ip_forwarding 1
+#  if_feature -6 ip_forwarding 1
+#  if_feature -4 ip_forwarding 1
 function if_feature() {
-	return
+	NO6=
+	NO4=
+	NOSHIFT=
+
+	case $1 in
+		-4)
+			NO6=1
+			;;
+		-6)
+			NO4=1
+			;;
+		*)
+			NOSHIFT=1
+	esac
+
+	if [ -z "$NOSHIFT" ]; then
+		shift
+	fi
+
 	if [ -z "${if}" ]; then
-        	echo $2 >/proc/sys/net/ipv4/conf/all/$1
+			if [ -z "$NO4" -a -e /proc/sys/net/ipv4/conf/all/$1 ]; then
+	        	echo $2 >/proc/sys/net/ipv4/conf/all/$1
+			fi
+			if [ -z "$NO6" -a -e /proc/sys/net/ipv6/conf/all/$1 ]; then
+	        	echo $2 >/proc/sys/net/ipv6/conf/all/$1
+			fi
+
 	else
-        	echo $2 >/proc/sys/net/ipv4/conf/${if}/$1
+			if [ -z "$NO4" -a -e /proc/sys/net/ipv4/conf/${if}/$1 ]; then
+	        	echo $2 >/proc/sys/net/ipv4/conf/${if}/$1
+			fi
+			if [ -z "$NO6" -a -e /proc/sys/net/ipv6/conf/${if}/$1 ]; then
+	        	echo $2 >/proc/sys/net/ipv6/conf/${if}/$1
+			fi
 	fi
 }
 
