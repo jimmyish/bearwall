@@ -182,7 +182,7 @@ for i in /lib/modules/`uname -r`/kernel/net/{,ipv4/}netfilter/{nf,ip}_conntrack_
 		module=$(basename ${i/.$EXT/})
 		# Strip {nf,ip}_conntrack_
 		substatus ${module:13}
-		#modprobe $module
+		modprobe $module
 	fi
 done
 
@@ -192,7 +192,7 @@ for i in /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/{nf,ip}_nat_*.$EXT; d
 		module=$(basename ${i/.$EXT/})
 		# Strip {nf,ip}_nat_
 		substatus ${module:7}
-		#modprobe $module
+		modprobe $module
 	fi
 done
 
