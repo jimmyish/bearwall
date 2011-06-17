@@ -125,6 +125,6 @@ release:
 		$(PKGNAME)-$(VERSION)/
 	@cd $(tmpdir); tar czf $(pwd)/$(PKGNAME)-$(VERSION).tar.gz \
 		$(PKGNAME)-$(VERSION)/
-	@rm -rf $(tmpdir) ./revision-info.sh
+	@rm -rf $(tmpdir) $(tmpdir)/revision-info.sh
 
 .PHONY: release build-rev

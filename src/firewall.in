@@ -27,10 +27,13 @@ fi
 
 cd $BASEDIR
 
-IPTABLES="iptables_test"
-#IPTABLES="/sbin/ip6tables"
+IPTABLES="duel_tables"
 
 function iptables_test() {
+	echo "/sbin/iptables $*"
+}
+
+function duel_tables() {
 
 	# Anything to the nat table is for v4 only
 	echo "$*" | grep -q "\-t nat"
