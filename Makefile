@@ -102,8 +102,8 @@ all: build-rev
 build-rev: build-firewall
 	@sed -e 's#VERSION=".*"#VERSION="$(VERSION)"#g' \
 		-e 's#REVISION=".*"#REVISION="$(r)"#g' \
-		src/firewall > src/firewall.$$
-	@mv src/firewall.$$ src/firewall
+		src/$(PKGNAME) > src/$(PKGNAME).$$
+	@mv src/$(PKGNAME).$$ src/$(PKGNAME)
 
 r := $(shell ./revision-info.sh)
 tmpdir := $(shell mktemp -ud)
@@ -116,10 +116,10 @@ release:
 	@sed -e 's#VERSION=".*"#VERSION="$(VERSION)"#g' \
 		-e 's#REVISION=".*"#REVISION="$(r)"#g' \
 		$(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.in \
-		> $(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.$$
+		> $(tmpdir)/$(PKGNAME)-$(VERSION)/src/$(PKGNAME).$$
 	@sed --in-place '/#---#---#---#/,$$d' \
 		$(tmpdir)/$(PKGNAME)-$(VERSION)/Makefile
-	@mv $(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.$$ \
+	@mv $(tmpdir)/$(PKGNAME)-$(VERSION)/src/$(PKGNAME).$$ \
 		$(tmpdir)/$(PKGNAME)-$(VERSION)/src/firewall.in
 	@cd $(tmpdir); tar cjf $(pwd)/$(PKGNAME)-$(VERSION).tar.bz2 \
 		$(PKGNAME)-$(VERSION)/
