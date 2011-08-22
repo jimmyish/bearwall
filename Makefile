@@ -38,53 +38,53 @@ clean:
 install-bin: all
 
 	install -D --group=root --mode=755 --owner=root \
-		src/$(PKGNAME) $(BINDIR)/$(PKGNAME)
+		src/$(PKGNAME) $(DESTDIR)$(BINDIR)/$(PKGNAME)
 
 	install -d --group=root --mode=755 --owner=root \
-		$(BASEDIR)/ruleset.d
+		$(DESTDIR)$(BASEDIR)/ruleset.d
 	for i in $(RULESET); \
 		do install -D --group=root --mode=644 --owner=root \
-		$$i $(BASEDIR)/$$i; \
+		$$i $(DESTDIR)$(BASEDIR)/$$i; \
 		done
 		
 	install -d --group=root --mode=755 --owner=root \
-		$(BASEDIR)/support
+		$(DESTDIR)$(BASEDIR)/support
 	for i in $(SUPPORT); \
 		do install -D --group=root --mode=644 --owner=root \
-		$$i $(BASEDIR)/$$i; \
+		$$i $(DESTDIR)$(BASEDIR)/$$i; \
 		done
 
 install-conf: all
 
 	install -d --group=root --mode=755 --owner=root \
-		$(CONFDIR)/hosts.d
+		$(DESTDIR)$(CONFDIR)/hosts.d
 	for i in $(HOSTS); \
 		do install -D --group=root --mode=744 --owner=root \
-		$$i $(CONFDIR)/$$i; \
+		$$i $(DESTDIR)$(CONFDIR)/$$i; \
 		done
 
 	install -d --group=root --mode=755 --owner=root \
-		$(CONFDIR)/classes.d
+		$(DESTDIR)$(CONFDIR)/classes.d
 	for i in $(CLASSES); \
 		do install -D --group=root --mode=644 --owner=root \
-		$$i $(CONFDIR)/$$i; \
+		$$i $(DESTDIR)$(CONFDIR)/$$i; \
 		done
 
 	install -d --group=root --mode=755 --owner=root \
-		$(CONFDIR)/interfaces.d
+		$(DESTDIR)$(CONFDIR)/interfaces.d
 	for i in $(INTERFACES); \
 		do install -D --group=root --mode=644 --owner=root \
-		$$i $(CONFDIR)/$$i; \
+		$$i $(DESTDIR)$(CONFDIR)/$$i; \
 		done
 
 install-doc: all
 	
 	install -d --group=root --mode=755 --owner=root \
-		$(MANDIR)/man8
+		$(DESTDIR)$(MANDIR)/man8
 	install --group=root --mode=644 --owner=root \
-		doc/$(PKGNAME).8 $(MANDIR)/man8
+		doc/$(PKGNAME).8 $(DESTDIR)$(MANDIR)/man8
 	install --group=root --mode=644 --owner=root \
-		doc/$(PKGNAME).8 $(MANDIR)/man8
+		doc/$(PKGNAME).8 $(DESTDIR)$(MANDIR)/man8
 
 install: install-bin install-conf install-doc
 
