@@ -1,8 +1,6 @@
-* IPv6 (now that 2.6 has all the required bits)
 * Fix output so that when run from init.d important stuff gets logged
 * Allow the use of rulesets in the forwarding chains
 * Debconf for picking interfaces -> classes
 * Command line option to use iptables-test debugging 
-* Move stopping the firewall from the init script into the main firewall script
 * Some smarter rulesets (ECN? NFS?)
 * ULOG support, not LOG

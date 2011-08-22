@@ -11,12 +11,16 @@ REVISION="HEAD"
 export VERSION BASEDIR CONFDIR
 
 # Check for any command line options (which we don't want !)
+FLUSH=0
 if [ $# -gt "0" ] ; then
 	case "$1" in
 		-v|--version)
 			echo "Perrys firewalling script, version $VERSION (r$REVISION)."
 			exit
 			;;
+        -f|--flush)
+            FLUSH=1
+            ;;
 		*)
 			echo $(basename $0) takes no options.
 			echo For more information read the man page.
@@ -53,9 +57,18 @@ else
 	exit
 fi
 
-# Now we can start building the firewall !
+# User is requesting we kill the firewall, not load it.
+if [ "$FLUSH" -eq 1 ]; then
+    status Flushing firewall
+    # Flush firewall, and reset policies.
+    flush_rules ACCEPT
+    exit 0
+else
+    # Just flush rules, don't touch the policies.
+    flush_rules
+fi
 
-flush_rules
+# Now we can start building the firewall !
 init_rules
 
 # Set up some reasonable default policies.  These rules should never be

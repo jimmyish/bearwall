@@ -2,6 +2,9 @@
 
 * Add support for Linux kernel 3.
 * Fix IPv6 support (previously buggy/non-functional).
+* Fix flushing logic to support IPv6, and add the ability to reset policies
+  after flushing.
+* Expose the ability to flush tables when called with -f.
 
 2011-06-17: Jamie Curtis
 

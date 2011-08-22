@@ -215,13 +215,37 @@ function policy() {
 	esac
 }
 
-# Flush *ALL* rules in all chains in all tables.
+# Flush *ALL* rules in all chains in all tables, optionally setting a policy on
+# the remaining (default) chains. This is one of the only methods where we
+# intentionally use IPXTABLES_BIN rather than IPTABLES, since v4/v6 have
+# different sets of tables.
 function flush_rules() {
+    local policy="$1"
 	cat /proc/net/ip_tables_names | while read table; do
-		$IPTABLES -t $table --flush 
-		$IPTABLES -t $table --delete-chain 
+		$IP4TABLES_BIN -t $table --flush
+		$IP4TABLES_BIN -t $table --delete-chain
+        [[ -n "$policy" ]] && reset_policies $IP4TABLES_BIN $table $policy
 	done
+    if [ -n "$IP6TABLES_BIN" ]; then
+	    cat /proc/net/ip6_tables_names | while read table; do
+            $IP6TABLES_BIN -t $table --flush
+            $IP6TABLES_BIN -t $table --delete-chain
+            [[ -n "$policy" ]] && reset_policies $IP6TABLES_BIN $table $policy
+        done
+    fi
 }
+
+# Helper method to reset the policy for all chains in a table.
+function reset_policies() {
+    local bin="$1"
+    local table="$2"
+    local policy="$3"
+    $bin -t $table -nL | grep ^Chain | awk '{print $2}' |
+    while read chain; do
+        $bin -t $table --policy $chain $policy
+    done
+}
+
 
 function load_interface_rules() {
 	if=$1
