@@ -5,6 +5,7 @@
 * Fix flushing logic to support IPv6, and add the ability to reset policies
   after flushing.
 * Expose the ability to flush tables when called with -f.
+* Release as version 1.06
 
 2011-06-17: Jamie Curtis
 
