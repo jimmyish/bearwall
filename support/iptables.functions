@@ -40,8 +40,8 @@ function dual_tables() {
 	fi
 
 	# If we get here, then put in both
-    $IP4TABLES_BIN "$@"
-    [[ -n "$IP6TABLES_BIN" ]] && $IP6TABLES_BIN "$@"
+    $IP4TABLES_BIN "$@" && \
+    [[ -n "$IP6TABLES_BIN" ]] && $IP6TABLES_BIN "$@" || /bin/true
 }
 
 IPTABLES="dual_tables"
@@ -94,7 +94,7 @@ function find_iptables() {
 
     if check_kernel_v6_support; then
         ip6tables=$(which ip6tables)
-        if [ -z "$ip6tables" -o ! -x $ip6tables ]; then
+        if [ -z "$ip6tables" -o ! -x "$ip6tables" ]; then
             echo "No ip6tables binary available! " \
                 "(non fatal, v6 rules will be ignored)"
         else
