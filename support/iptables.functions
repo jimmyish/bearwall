@@ -5,7 +5,9 @@ IP4TABLES_BIN=""
 IP6TABLES_BIN=""
 
 V6ADDR_REGEXP="((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?"
-V6WARNING=0
+export V6SUPPORTMSG=${V6SUPPORTMSG:-0}
+export V6BINMSG=${V6BINMSG:-0}
+export V6WARNING=${V6WARNING:-0}
 
 # This method acts as a replacement for the iptables binary ($IPTABLES) in all
 # rulesets and scripts. It dispatches the commands to iptables, ip6tables or
@@ -69,7 +71,11 @@ function check_kernel_v6_support() {
     fi
 
     if [ ! -f /proc/net/ip6_tables_names ]; then
-        echo "No ip6tables in kernel! (non fatal, v6 rules will be ignored)"
+        # Warn once about lack of IPv6 support.
+        if [ "$V6SUPPORTMSG" -eq 0 ]; then
+            echo "No ip6tables in kernel! (non fatal, v6 rules will be ignored)"
+            V6SUPPORT=1
+        fi
         return 1
     fi
     return 0
@@ -95,8 +101,12 @@ function find_iptables() {
     if check_kernel_v6_support; then
         ip6tables=$(which ip6tables)
         if [ -z "$ip6tables" -o ! -x "$ip6tables" ]; then
-            echo "No ip6tables binary available! " \
-                "(non fatal, v6 rules will be ignored)"
+            # Warn once about lack of IPv6 support.
+            if [ "$V6BINMSG" -eq 0 ]; then
+                echo "No ip6tables binary available! " \
+                    "(non fatal, v6 rules will be ignored)"
+                V6BINMSG=1
+            fi
         else
             IP6TABLES_BIN=$ip6tables
             if ! $IP6TABLES_BIN -nvL >/dev/null; then
