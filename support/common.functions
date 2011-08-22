@@ -1,4 +1,5 @@
-export IPTABLES=${IPTABLES:-/sbin/iptables}
+# Common functions used in firewall rules. You must source this from a script
+# that has already setup IPTABLES!
 
 function polite_target() {
 	local RULE

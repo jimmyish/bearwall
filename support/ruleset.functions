@@ -1,6 +1,9 @@
-RULE=$(basename $0 | sed 's/.rule$//g')
+# Common functions used in firewall rulesets.
 
-export IPTABLES=${IPTABLES:-/sbin/iptables}
+# Make sure iptables and helper methods are available
+. support/iptables.functions
+
+RULE=$(basename $0 | sed 's/.rule$//g')
 
 $IPTABLES --delete-chain $RULE 2>/dev/null
 $IPTABLES --new $RULE

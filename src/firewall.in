@@ -27,44 +27,7 @@ fi
 
 cd $BASEDIR
 
-IPTABLES="dual_tables"
-
-function iptables_test() {
-	echo "/sbin/iptables $*"
-}
-
-function dual_tables() {
-
-	# Anything to the nat table is for v4 only
-	echo "$*" | grep -q "\-t nat"
-	if [ $? -eq 0 ]; then
-		/sbin/iptables "$@"
-		return
-	fi
-
-
-	# Anything with a v6 address is for v6 only
-	echo "$*" | grep -q -P '((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?'
-	if [ $? -eq 0 ]; then
-		/sbin/ip6tables "$@"
-		return
-	fi
-
-	# Anything with a v4 address is for v6 only
-	echo "$*" | grep -q -P '\d+\.\d+\.\d+\.\d+'
-	if [ $? -eq 0 ]; then
-		/sbin/iptables "$@"
-		return
-	fi
-
-	# If we get here, then put in both
-	/sbin/iptables "$@"
-	/sbin/ip6tables "$@"
-}
-
-export IPTABLES
-export -f iptables_test
-
+. support/iptables.functions
 . support/common.functions
 . support/firewall.functions
 
@@ -87,17 +50,6 @@ if [ -d $CONFDIR/interfaces.d/ ]; then
 	fi
 else
 	echo No interfaces.d directory in $CONFDIR/, aborting.
-	exit
-fi
-
-# Check iptables is available and loaded
-
-if [ ! -f /proc/net/ip_tables_names ]; then
-	modprobe -q ip_tables
-fi
-
-if [ ! -f /proc/net/ip_tables_names ]; then
-	echo No iptables in kernel?
 	exit
 fi
 

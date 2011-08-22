@@ -1,3 +1,6 @@
+# Common functions used in firewall rules. You must source this from a script
+# that has already setup IPTABLES!
+
 # This function sets or clears a feature for an interface
 #
 # usage:

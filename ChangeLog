@@ -1,6 +1,7 @@
 2011-08-22: Matt Brown
 
 * Add support for Linux kernel 3.
+* Fix IPv6 support (previously buggy/non-functional).
 
 2011-06-17: Jamie Curtis
 

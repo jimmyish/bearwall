@@ -1,0 +1,115 @@
+# Common functionality related to handling iptables within bearwall.
+
+IPTABLES=""
+IP4TABLES_BIN=""
+IP6TABLES_BIN=""
+
+V6ADDR_REGEXP="((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?"
+V6WARNING=0
+
+# This method acts as a replacement for the iptables binary ($IPTABLES) in all
+# rulesets and scripts. It dispatches the commands to iptables, ip6tables or
+# both depending on the type of rule and the data it is operating on.
+function dual_tables() {
+
+	# Anything to the nat table is for v4 only
+	if echo "$*" | grep -q "\-t nat"; then
+		$IP4TABLES_BIN "$@"
+		return
+	fi
+
+
+	# Anything with a v6 address is for v6 only
+	if echo "$*" | grep -q -P "$V6ADDR_REGEXP"; then
+        if [ -z "$IP6TABLES_BIN" ]; then
+            # Warn once that v6 specific rules were not applied.
+            if [ "$V6WARNING" -eq 0 ]; then
+                echo "Warning: v6 rule(s) were skipped (no ip6tables support)!"
+                V6WARNING=1
+            fi
+        else
+            $IP6TABLES_BIN "$@"
+        fi
+		return
+	fi
+
+	# Anything with a v4 address is for v6 only
+	if echo "$*" | grep -q -P "\d+\.\d+\.\d+\.\d+"; then
+		$IP4TABLES_BIN "$@"
+		return
+	fi
+
+	# If we get here, then put in both
+    $IP4TABLES_BIN "$@"
+    [[ -n "$IP6TABLES_BIN" ]] && $IP6TABLES_BIN "$@"
+}
+
+IPTABLES="dual_tables"
+
+function iptables_test() {
+	echo "/sbin/iptables $*"
+}
+
+# Checks for iptables support in the kernel, attempts to load it if not found.
+function check_kernel_v4_support() {
+    if [ ! -f /proc/net/ip_tables_names ]; then
+        modprobe -q ip_tables
+    fi
+
+    if [ ! -f /proc/net/ip_tables_names ]; then
+        echo "No iptables support in kernel!" >&2
+        exit 1
+    fi
+    return 0
+}
+
+function check_kernel_v6_support() {
+    if [ ! -f /proc/net/ip6_tables_names ]; then
+        modprobe -q ip6_tables
+    fi
+
+    if [ ! -f /proc/net/ip6_tables_names ]; then
+        echo "No ip6tables in kernel! (non fatal, v6 rules will be ignored)"
+        return 1
+    fi
+    return 0
+}
+
+# Checks for iptables support in the kernel and configures the binaries to use.
+function find_iptables() {
+    local ip4tables ip6tables ip6tables_kernel
+
+    check_kernel_v4_support
+
+    ip4tables=$(which iptables)
+    if [ -z "$ip4tables" -o ! -x $ip4tables ]; then
+        echo "No iptables binary available!" >&2
+        exit 1
+    fi
+    IP4TABLES_BIN=$ip4tables
+    if ! $IP4TABLES_BIN -nvL >/dev/null; then
+        echo "iptables binary ($IP4TABLES_BIN) does not work!" >&2
+        exit 1
+    fi
+
+    if check_kernel_v6_support; then
+        ip6tables=$(which ip6tables)
+        if [ -z "$ip6tables" -o ! -x $ip6tables ]; then
+            echo "No ip6tables binary available! " \
+                "(non fatal, v6 rules will be ignored)"
+        else
+            IP6TABLES_BIN=$ip6tables
+            if ! $IP6TABLES_BIN -nvL >/dev/null; then
+                echo "ip6tables binary ($IP6TABLES_BIN) does not work!" >&2
+                exit 1
+            fi
+        fi
+    fi
+
+    # Force all users of iptables through our method above.
+    IPTABLES="dual_tables"
+}
+
+# Make IPTABLES available to callers and subshells.
+find_iptables
+export IPTABLES
