@@ -1,3 +1,8 @@
+2012-03-10: Matt Brown
+
+* Support running on systems using busybox grep
+  - Convert perl style regexes to posix extended format.
+
 2011-08-22: Matt Brown
 
 * Add support for Linux kernel 3.
