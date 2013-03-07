@@ -46,7 +46,7 @@ install-bin: all
 		do install -D --group=root --mode=644 --owner=root \
 		$$i $(DESTDIR)$(BASEDIR)/$$i; \
 		done
-		
+
 	install -d --group=root --mode=755 --owner=root \
 		$(DESTDIR)$(BASEDIR)/support
 	for i in $(SUPPORT); \
