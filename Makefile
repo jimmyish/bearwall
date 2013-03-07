@@ -2,9 +2,9 @@ VERSION=1.06
 
 DESTDIR ?= /usr/local
 
-BINDIR ?= $(DESTDIR)/sbin
-SHARDIR ?= $(DESTDIR)/share
-ETCDIR ?= $(DESTDIR)/etc
+BINDIR ?= /sbin
+SHARDIR ?= /share
+ETCDIR ?= /etc
 
 PKGNAME=bearwall
 IPTABLES=iptables
