@@ -1,23 +1,23 @@
-
-# For localhost we're really open, we rely on "rp_filter" to catch bogus 
-# packets.  You should never forward from or two localhost, it's just bad
+#
+# For localhost we're really open, we rely on "rp_filter" to catch bogus
+# packets.  You should never forward from or to localhost, it's just bad
 # mm 'kay.  So we reject these.
+#
 
 # Run this on startup
-on_startup 
+on_startup
 
-policy in ACCEPT 
-policy out ACCEPT 
+policy in ACCEPT
+policy out ACCEPT
 polite_reject forward-in
 polite_reject forward-out
 
-if_feature rp_filter 1 		 # Enable Reverse Router Filtering
-if_feature accept_redirects 0 	 # Accept Redirects
+if_feature rp_filter 1           # Enable Reverse Router Filtering
+if_feature accept_redirects 0    # Accept Redirects
 if_feature accept_source_route 0 # Accept Source Routes
 if_feature bootp_relay 0         # Dont forward bootp requests
-if_feature accept_ra 0           # Accept IPv6 Router Advertisments 
+if_feature accept_ra 0           # Accept IPv6 Router Advertisments
                                  # (overridden if v6 forwarding is enabled)
-if_feature forwarding 0          # forwarding
-if_feature log_martians 0        # log martians?
+if_feature forwarding 0          # Forward packets arriving on this interface
+if_feature log_martians 0        # Log martians?
 if_feature send_redirects 0      # Send redirects?
-

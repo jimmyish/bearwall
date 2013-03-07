@@ -1,4 +1,7 @@
+#
 # This interface firewall is only run on demand
+#
+
 on_boot
 
 policy in tcp-trust
@@ -6,7 +9,7 @@ policy in udp-trust
 policy in icmp-trust
 polite_reject in
 
-policy out ACCEPT 
+policy out ACCEPT
 
 policy forward-in ACCEPT --destination 10.1.0.0/16
 polite_deny forward-in
@@ -15,13 +18,12 @@ policy forward-out ACCEPT
 
 if_feature disable_ipv6 1        # Disable IPv6 completely?
 if_feature autoconf 0            # Enable IPv6 autoconf?
-if_feature rp_filter 0 		     # Disable Reverse Router Filtering
-if_feature accept_redirects 0 	 # Accept Redirects
+if_feature rp_filter 0           # Disable Reverse Router Filtering
+if_feature accept_redirects 0    # Accept Redirects
 if_feature accept_source_route 0 # Accept Source Routes
 if_feature bootp_relay 0         # Dont forward bootp requests
-if_feature accept_ra 0           # Accept IPv6 Router Advertisments 
+if_feature accept_ra 0           # Accept IPv6 Router Advertisments
                                  # (overridden if v6 forwarding is enabled)
-if_feature forwarding 1          # forwarding
-if_feature log_martians 0        # log martians?
+if_feature forwarding 1          # Forward packets arriving on this interface
+if_feature log_martians 0        # Log martians?
 if_feature send_redirects 1      # Send redirects?
-
