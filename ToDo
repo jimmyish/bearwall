@@ -1,6 +1,3 @@
-* Fix output so that when run from init.d important stuff gets logged
-* Allow the use of rulesets in the forwarding chains
-* Debconf for picking interfaces -> classes
-* Command line option to use iptables-test debugging 
-* Some smarter rulesets (ECN? NFS?)
-* ULOG support, not LOG
+ToDos are now listed on the bearwall github.
+
+http://github.com/jimmyish/bearwall/wiki/ToDo
