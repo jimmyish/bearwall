@@ -78,7 +78,7 @@ install-conf: all
 		done
 
 install-doc: all
-	
+
 	install -d --group=root --mode=755 --owner=root \
 		$(DESTDIR)$(MANDIR)/man8
 	install --group=root --mode=644 --owner=root \
@@ -93,7 +93,7 @@ install: install-bin install-conf install-doc
 #---#---#---#
 #
 # All text after the marker above is removed during a "make release" as we
-# put the revision info into the file at release time and it doesn't need 
+# put the revision info into the file at release time and it doesn't need
 # to be done each build
 #
 
