@@ -1,0 +1,2 @@
+:msg, contains, "FW/" -/var/log/bearwall.log
+& ~
