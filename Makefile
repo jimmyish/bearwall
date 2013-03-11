@@ -18,6 +18,9 @@ BASEDIR ?= $(SHARDIR)/$(PKGNAME)
 CONFDIR ?= $(ETCDIR)/$(PKGNAME)
 MANDIR ?= $(SHARDIR)/man
 
+RSYSLOG_SEARCH := "/etc/rsyslog.d /usr/etc/rsyslog.d /usr/local/etc/rsyslog.d"
+LOGROTATE_SEARCH := "/etc/logrotate.d /usr/etc/logrotate.d /usr/local/etc/logrotate.d"
+
 RULESET := $(wildcard ruleset.d/*)
 HOSTS := $(wildcard hosts.d/*)
 CLASSES := $(wildcard classes.d/*)
@@ -82,6 +85,36 @@ install-conf: all
 		$$i $(DESTDIR)$(CONFDIR)/$$i; \
 		done
 
+install-rsyslog-conf: all
+
+	for dir in "$(RSYSLOG_SEARCH)"; do \
+		if test -d "$$dir"; then \
+			if test -f "$$dir/$(PKGNAME).conf"; then \
+				install -D --group=root --mode=644 --owner=root \
+					src/rsyslog $$dir/$(PKGNAME).conf.dist; \
+			else \
+				install -D --group=root --mode=644 --owner=root \
+					src/rsyslog $$dir/$(PKGNAME).conf; \
+			fi; \
+			break; \
+		fi; \
+	done
+
+install-logrotate-conf: all
+
+	for dir in "$(LOGROTATE_SEARCH)"; do \
+		if test -d "$$dir"; then \
+			if test -f "$$dir/$(PKGNAME).conf"; then \
+				install -D --group=root --mode=644 --owner=root \
+					src/logrotate $$dir/$(PKGNAME).dist; \
+			else \
+				install -D --group=root --mode=644 --owner=root \
+					src/logrotate $$dir/$(PKGNAME); \
+			fi; \
+			break; \
+		fi; \
+	done
+
 install-doc: all
 
 	install -d --group=root --mode=755 --owner=root \
@@ -91,7 +124,7 @@ install-doc: all
 	install --group=root --mode=644 --owner=root \
 		doc/$(PKGNAME).8 $(DESTDIR)$(MANDIR)/man8
 
-install: install-bin install-conf install-doc
+install: install-bin install-conf install-rsyslog-conf install-logrotate-conf install-doc
 
 .PHONY: clean all build-firewall install install-bin install-conf install-doc
 
