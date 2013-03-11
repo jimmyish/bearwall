@@ -1,10 +1,15 @@
 VERSION=1.06
 
-DESTDIR ?= /usr/local
+# PREFIX is where we will ultimately be installed to
+# (So we can tell bearwall where it is going to be running from)
+PREFIX ?= /usr/local
+# DESTDIR is where we are installing to
+# (allows us to install in staging dir for packaging)
+DESTDIR ?=
 
-BINDIR ?= /sbin
-SHARDIR ?= /share
-ETCDIR ?= /etc
+BINDIR ?= $(PREFIX)/sbin
+SHARDIR ?=$(PREFIX)/share
+ETCDIR ?= $(PREFIX)/etc
 
 PKGNAME=bearwall
 IPTABLES=iptables
