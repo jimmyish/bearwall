@@ -18,8 +18,8 @@ BASEDIR ?= $(SHARDIR)/$(PKGNAME)
 CONFDIR ?= $(ETCDIR)/$(PKGNAME)
 MANDIR ?= $(SHARDIR)/man
 
-RSYSLOG_SEARCH := "/etc/rsyslog.d /usr/etc/rsyslog.d /usr/local/etc/rsyslog.d"
-LOGROTATE_SEARCH := "/etc/logrotate.d /usr/etc/logrotate.d /usr/local/etc/logrotate.d"
+RSYSLOG_SEARCH := "$(DESTDIR)/etc/rsyslog.d $(DESTDIR)/usr/etc/rsyslog.d $(DESTDIR)/usr/local/etc/rsyslog.d"
+LOGROTATE_SEARCH := "$(DESTDIR)/etc/logrotate.d $(DESTDIR)/usr/etc/logrotate.d $(DESTDIR)/usr/local/etc/logrotate.d"
 
 RULESET := $(wildcard ruleset.d/*)
 HOSTS := $(wildcard hosts.d/*)
