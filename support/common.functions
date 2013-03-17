@@ -10,11 +10,23 @@ function polite_target() {
 	shift
 	TARGET=$1
 	shift
-	$IPTABLES --append $RULE \
-		--match limit --limit 2/s \
-		--jump LOG --log-prefix "FW/${RULE}: " \
-		--log-level debug \
-		$*
+    case $conf_logging in
+        nflog )
+            $IPTABLES --append $RULE \
+                --match limit --limit 2/s \
+                --jump NFLOG --nflog-prefix "FW/${RULE}: "
+                $*
+        ;;
+        none )
+        ;;
+        syslog|* )
+            $IPTABLES --append $RULE \
+                --match limit --limit 2/s \
+                --jump LOG --log-prefix "FW/${RULE}: " \
+                --log-level debug \
+                $*
+        ;;
+    esac
 	if [ "$TARGET" != "DROP" ]; then
 		$IPTABLES --append $RULE \
 			--match limit --limit 5/s \

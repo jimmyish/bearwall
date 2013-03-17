@@ -146,10 +146,22 @@ done
 # the end.  These packets shouldn't really get here, you really should handle
 # all packets in the directories.
 for i in INPUT OUTPUT FORWARD; do
-	$IPTABLES --append $i \
-		-m limit --limit 5/s \
-		--jump LOG \
-		--log-prefix "FW/End of ${i} -- see FAQ:"
+    case $conf_logging in
+        nflog )
+            $IPTABLES --append $i \
+                -m limit --limit 5/s \
+                --jump NFLOG \
+                --nflog-prefix "FW/End of ${i} -- see FAQ:"
+        ;;
+        none )
+        ;;
+        syslog|* )
+            $IPTABLES --append $i \
+                -m limit --limit 5/s \
+                --jump LOG \
+                --log-prefix "FW/End of ${i} -- see FAQ:"
+        ;;
+    esac
 done
 
 status Loading connection tracking helper modules
