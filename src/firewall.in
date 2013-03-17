@@ -29,6 +29,16 @@ if [ $# -gt "0" ] ; then
 	esac
 fi
 
+# Parse configuration file
+# Configuration variables can be accessed as conf_KEY
+while read line; do
+if [[ "$line" =~ ^[^#]*= ]]; then
+    k=`echo $line | cut -d'=' -f 1`
+    v=`echo $line | cut -d'=' -f 2-`
+    export $"conf_${k}"=$v
+fi
+done < $CONFDIR/bearwall.conf
+
 cd $BASEDIR
 
 . support/iptables.functions
