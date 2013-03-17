@@ -33,6 +33,9 @@ build-firewall:
 	@sed -e s#@BASEDIR@#$(BASEDIR)#g -e s#@CONFDIR@#$(CONFDIR)#g \
 		src/firewall.in \
 		>src/$(PKGNAME)
+	@sed -e s#@CONFDIR@#$(CONFDIR)#g \
+		src/config.in \
+		>src/$(PKGNAME).conf
 	@sed -e s#@BASEDIR@#$(subst -,\\\\-,$(BASEDIR))#g \
 		-e s#@CONFDIR@#$(subst -,\\\\-,$(CONFDIR))#g \
 		-e s#@PKGNAME@#$(subst -,\\\\-,$(PKGNAME))#g \
@@ -40,7 +43,7 @@ build-firewall:
 		>doc/$(PKGNAME).8
 
 clean:
-	@rm -f src/$(PKGNAME) doc/$(PKGNAME).8
+	@rm -f src/$(PKGNAME) doc/$(PKGNAME).8 src/$(PKGNAME).conf
 	@rm -f $(PKGNAME)-*.tar.*
 
 install-bin: all
@@ -63,6 +66,9 @@ install-bin: all
 		done
 
 install-conf: all
+
+	install -D --group=root --mode=644 --owner=root \
+		src/$(PKGNAME).conf $(DESTDIR)$(CONFDIR)/$(PKGNAME).conf
 
 	install -d --group=root --mode=755 --owner=root \
 		$(DESTDIR)$(CONFDIR)/hosts.d
