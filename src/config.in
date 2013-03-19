@@ -1,0 +1,25 @@
+#
+# Bearwall configuration file
+#
+# This file is used to configure the behaviour of bearwall, firewall rules
+# are configured in @CONFDIR@/interfaces.d and @CONFDIR@/classes.d
+#
+
+#
+# Logging
+#
+# Where should firewall rule matches be logged to?
+#
+# Values:
+#    - syslog
+#        Logs end up in /var/log/bearwall.log, the downside of syslog is
+#        that dmesg gets polluted with rule matches
+#    - nflog
+#        Packets that match firewall rules will be passed to the userspace
+#        daemon ulogd which will then log packets to the log file configured
+#        in /etc/ulogd.conf (/var/log/ulog/syslogemu.log by default)
+#    - none
+#        Don't log matched packets
+#
+# Default: logging=syslog
+logging=syslog
