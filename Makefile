@@ -132,6 +132,8 @@ install-doc: all
 
 install: install-bin install-conf install-doc install-rsyslog-conf install-logrotate-conf
 
+install-fragments: install-rsyslog-conf install-logrotate-conf
+
 .PHONY: clean all build-firewall install install-bin install-conf install-doc
 
 #---#---#---#
