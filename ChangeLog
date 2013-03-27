@@ -1,3 +1,10 @@
+2013-03-27: Brad Cowie
+
+* Support new logging styles
+  - Added NFLOG support to prevent rule matches ending up in dmesg
+* Added bearwall global configuration file
+* Released as version 1.07
+
 2012-03-10: Matt Brown
 
 * Support running on systems using busybox grep

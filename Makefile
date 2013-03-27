@@ -1,4 +1,4 @@
-VERSION=1.06
+VERSION=1.07
 
 # PREFIX is where we will ultimately be installed to
 # (So we can tell bearwall where it is going to be running from)
