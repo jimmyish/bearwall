@@ -10,7 +10,7 @@ DESTDIR ?=
 BINDIR ?= $(PREFIX)/sbin
 SHARDIR ?=$(PREFIX)/share
 ETCDIR ?= $(PREFIX)/etc
-DATADIR ?= $(PREFIX)/var/cache/bearwall
+DATADIR ?= $(PREFIX)/var/cache
 
 PKGNAME=bearwall
 IPTABLES=iptables
@@ -18,6 +18,7 @@ IPTABLES=iptables
 BASEDIR ?= $(SHARDIR)/$(PKGNAME)
 CONFDIR ?= $(ETCDIR)/$(PKGNAME)
 MANDIR ?= $(SHARDIR)/man
+DATADIR := $(DATADIR)/$(PKGNAME)
 
 RSYSLOG_SEARCH := "$(DESTDIR)/etc/rsyslog.d $(DESTDIR)/usr/etc/rsyslog.d $(DESTDIR)/usr/local/etc/rsyslog.d"
 LOGROTATE_SEARCH := "$(DESTDIR)/etc/logrotate.d $(DESTDIR)/usr/etc/logrotate.d $(DESTDIR)/usr/local/etc/logrotate.d"
