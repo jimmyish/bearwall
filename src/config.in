@@ -51,15 +51,15 @@ logging=syslog
 #       generates a iptables-restore script rather than iptables commands
 #       in this mode allowing for much faster load time of the rules into
 #       the kernel. Each iptables table {mangle, nat, filter} is loaded
-#	    atomically into the kernel. This minimises forwarding downtime.
-#	    However due to the atomic nature, the entire table and all tables
-#	    after fail if a single rule fails. To minimise the unpredictable
-#	    state of a rule failure in atomic mode, bearwall uses iptables-save
-#	    to store the current state of the firewall before doing atomic
-#	    loads. If an error is detected during atomic loading, bearwall
-#	    automatically attempts to restore the kernel state to what it was
-#	    before the atomic load started. This should leave the firewall in a
-#	    known state on an error.
+#       atomically into the kernel. This minimises forwarding downtime.
+#       However due to the atomic nature, the entire table and all tables
+#       after fail if a single rule fails. To minimise the unpredictable
+#       state of a rule failure in atomic mode, bearwall uses iptables-save
+#       to store the current state of the firewall before doing atomic
+#       loads. If an error is detected during atomic loading, bearwall
+#       automatically attempts to restore the kernel state to what it was
+#       before the atomic load started. This should leave the firewall in a
+#       known state on an error.
 #
 # Default: mode=atomic
 mode=atomic
