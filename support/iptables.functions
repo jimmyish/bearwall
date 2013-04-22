@@ -282,30 +282,30 @@ function build_atomic() {
 # state it saved to avoid the firewall being left in a half state.
 function atomic_load() {
 	substatus Save IPv4
-	iptables-save  > $DATADIR/tmp/saved_v4
+	$IP4TABLES_SAVE_BIN  > $DATADIR/tmp/saved_v4
 	substatus Save IPv6
-	ip6tables-save  > $DATADIR/tmp/saved_v6
+	$IP6TABLES_SAVE_BIN  > $DATADIR/tmp/saved_v6
 
 	if [ -e "$DATADIR/tmp/merged_v4" ]; then
 		substatus Load IPv4
-		iptables-restore  $DATADIR/tmp/merged_v4
+		$IP4TABLES_RESTORE_BIN  $DATADIR/tmp/merged_v4
 		if [ "$?" -ne 0 ]; then
 			echo "ERROR: failed to load new iptables, now restoring old state"
 			substatus Load saved IPv4
-			iptables-restore  $DATADIR/tmp/saved_v4 || echo "ERROR: failed to restore old IPv4 state"
+			$IP4TABLES_RESTORE_BIN  $DATADIR/tmp/saved_v4 || echo "ERROR: failed to restore old IPv4 state"
 			exit 1
 		fi
 	fi
 
 	if [ -e "$DATADIR/tmp/merged_v6" ]; then
 		substatus Load IPv6
-		ip6tables-restore  $DATADIR/tmp/merged_v6
+		$IP6TABLES_RESTORE_BIN  $DATADIR/tmp/merged_v6
 		if [ "$?" -ne 0 ]; then
 			echo "ERROR: failed to load new ip6tables, now restoring old state"
 			substatus Load saved IPv6
-			ip6tables-restore  $DATADIR/tmp/saved_v6 || echo "ERROR: failed to restore old IPv6 state"
+			$IP6TABLES_RESTORE_BIN  $DATADIR/tmp/saved_v6 || echo "ERROR: failed to restore old IPv6 state"
 			substatus Load saved IPv4
-			iptables-restore  $DATADIR/tmp/saved_v4 || echo "ERROR: failed to restore old IPv4 state"
+			$IP4TABLES_RESTORE_BIN  $DATADIR/tmp/saved_v4 || echo "ERROR: failed to restore old IPv4 state"
 			exit 1
 		fi
 	fi
