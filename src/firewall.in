@@ -1,14 +1,20 @@
 #!/bin/bash
 
+
 BASEDIR=@BASEDIR@
 CONFDIR=@CONFDIR@
+DATADIR=@DATADIR@
 
 # Don't change these directly, they are filled in by make release
 # when a new release is built.
 VERSION="1.01"
 REVISION="HEAD"
 
-export VERSION BASEDIR CONFDIR
+export VERSION BASEDIR CONFDIR DATADIR
+
+# Flush the datadir/tmp
+rm -rf $DATADIR/tmp
+mkdir -p $DATADIR/tmp
 
 # Check for any command line options (which we don't want !)
 FLUSH=0
@@ -38,6 +44,16 @@ if [[ "$line" =~ ^[^#]*= ]]; then
     export $"conf_${k}"=$v
 fi
 done < $CONFDIR/bearwall.conf
+
+if [ -z "$conf_mode" ]; then
+	export conf_mode=atomic
+fi
+
+if [ "$conf_mode" != "atomic" -a "$conf_mode" != "inline" -a "$conf_mode" != "batch" ]; then
+	echo "Error in config file: mode must be one of atomic|batch|inline"
+	exit 1
+fi
+
 
 cd $BASEDIR
 
@@ -70,22 +86,32 @@ fi
 # User is requesting we kill the firewall, not load it.
 if [ "$FLUSH" -eq 1 ]; then
     status Flushing firewall
+    conf_mode=inline
+
     # Flush firewall, and reset policies.
     flush_rules ACCEPT
     exit 0
 else
-    # Just flush rules, don't touch the policies.
-    flush_rules
+    # Just flush rules for inline and batch modes, don't touch the policies
+    # Atomic implicitly flushes the rules.
+    if [ "$conf_mode" != "atomic" ]; then
+        flush_rules
+    fi
 fi
 
 # Now we can start building the firewall !
-init_rules
 
-# Set up some reasonable default policies.  These rules should never be
+# Set up some reasonable default policies for inline and batch mode. For atomic the policy
+# is created during build_atomic.  These rules should never be
 # met, as a logging rule above them should be used.
-iptables_with_table --policy INPUT DROP
-iptables_with_table --policy OUTPUT DROP
-iptables_with_table --policy FORWARD DROP
+if [ "$conf_mode" != "atomic" ]; then
+	iptables_with_table --policy INPUT DROP
+	iptables_with_table --policy OUTPUT DROP
+	iptables_with_table --policy FORWARD DROP
+else
+	# If we are trying to do atomic, check we can find the tools before we continue
+	check_atomic
+fi
 
 new_chain fw-in
 new_chain fw-out
@@ -163,6 +189,23 @@ for i in INPUT OUTPUT FORWARD; do
         ;;
     esac
 done
+
+
+# We have finished building the firewall rules. If we are inline we have built
+# have finished the firewall too, otherwise we now have to load the firewall 
+# rules based on the mode.
+case $conf_mode in 
+	atomic)
+		status Doing atomic load
+		substatus Building atomic load files
+		build_atomic
+		atomic_load
+		;;
+	batch)
+		status Doing batch load
+		batch_load
+		;;
+esac
 
 status Loading connection tracking helper modules
 for i in /lib/modules/`uname -r`/kernel/net/{,ipv4/}netfilter/{nf,ip}_conntrack_*.$EXT; do

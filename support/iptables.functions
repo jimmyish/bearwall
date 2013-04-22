@@ -3,6 +3,10 @@
 IPTABLES=""
 IP4TABLES_BIN=""
 IP6TABLES_BIN=""
+IP4TABLES_SAVE_BIN=""
+IP4TABLES_RESTORE_BIN=""
+IP6TABLES_SAVE_BIN=""
+IP6TABLES_RESTORE_BIN=""
 
 V6ADDR_REGEXP="((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])(\.(25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])(\.(25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])(\.(25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])(\.(25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])(\.(25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])(\.(25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])(\.(25[0-5]|2[0-4][[:digit:]]|1[[:digit:]][[:digit:]]|[1-9]?[[:digit:]])){3}))|:)))(%.+)?"
 V4ADDR_REGEXP="[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+"
@@ -11,43 +15,143 @@ export V6BINMSG=${V6BINMSG:-0}
 export V6WARNING=${V6WARNING:-0}
 
 # This method acts as a replacement for the iptables binary ($IPTABLES) in all
-# rulesets and scripts. It dispatches the commands to iptables, ip6tables or
-# both depending on the type of rule and the data it is operating on.
-function dual_tables() {
+# rulesets and scripts. It is the job of this function to figure out whether 
+# the rule is for iptables, ip6tables or both, and how to get the rule to the
+# binary based on the mode of operation.
+function iptables_with_table {
+	local TARGET table ARGS JUMP
+	COMMAND=$1
+	shift
+	TARGET=$1
+	shift
+	cmd=
+	ARGS=
+	JUMP=
+	table=
+	while [ $# -gt 0 ]; do
+		if [ 	   "-j" = "$1" -o "--jump" = "$1" \
+			-o "-N" = "$1" -o "--new-chain" = "$1" \
+			-o "-X" = "$1" -o "--delete-chain" = "$1" \
+			-o "-A" = "$1" -o "--append" = "$1" \
+			-o "-A" = "$1" -o "--insert" = "$1" \
+			]; then
+			cmd=$1
+			shift
+			JUMP=$1
+		elif [ "-t" = "$1" -o "--table" = "$1" ]; then
+			shift
+			echo \*\*\* TABLE found: $1 \*\*\*
+			table=$1
+		elif [ "--nflog-prefix" = "$1" -o "--log-prefix" = "$1" ]; then
+			if [ "$conf_mode" != "inline" ]; then
+				ARGS="$ARGS $1 \"$2\""
+				shift
+			else
+				ARGS="$ARGS $1"
+			fi
+		else
+			ARGS="$ARGS $1"
+		fi
+		shift
+	done
+	if [ -z "$table" ]; then
+		case $TARGET:$JUMP in
+			POSTROUTING:*|*-postrouting-out:*|PREROUTING:*|*-prerouting-in:*)
+				table=nat
+				;;
+			*:*MARK|*:TOS|*:TTL|*-mangle-*|mangle-*)
+				table=mangle
+				;;
+			*)
+				table=filter
+				;;
+		esac
+	fi
+	if [ ! -z "$JUMP" ]; then
+		JUMP="$cmd $JUMP"
+	fi
 
-	# Anything to the nat table is for v4 only
-	if echo "$*" | grep -q "\-t nat"; then
-		$IP4TABLES_BIN "$@"
+	# In atomic mode some rules just create file structure, on rules
+	# for iptables, deal with them here
+	if [ "$conf_mode" = "atomic" ]; then
+		mkdir -p $DATADIR/tmp/v4/$table
+		if [ "$table" != "nat" ]; then
+			mkdir -p $DATADIR/tmp/v6/$table
+		fi
+
+		if [ "-N" = "$COMMAND" -o "--new-chain" = "$COMMAND" ]; then
+			touch $DATADIR/tmp/v4/$table/$TARGET
+			if [ "$table" != "nat" ]; then
+				touch $DATADIR/tmp/v6/$table/$TARGET
+			fi
+			return
+		fi
+	fi
+
+	# Anything to the nat table or has a v6 address is for v4 only
+	if [ "$table" = "nat" ] || echo "$ARGS" | grep -q -E "$V4ADDR_REGEXP" ; then
+		case $conf_mode in
+			atomic)
+				echo "$COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/v4/$table/$TARGET
+				;;
+			inline)
+				$IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS || 
+					echo Failed: $IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS
+				;;
+			batch)
+				echo "$IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/batched_v4
+		esac
 		return
 	fi
 
 
 	# Anything with a v6 address is for v6 only
-	if echo "$*" | grep -q -E "$V6ADDR_REGEXP"; then
-        if [ -z "$IP6TABLES_BIN" ]; then
-            # Warn once that v6 specific rules were not applied.
-            if [ "$V6WARNING" -eq 0 ]; then
-                echo "Warning: v6 rule(s) were skipped (no ip6tables support)!"
-                V6WARNING=1
+	if echo "$ARGS" | grep -q -E "$V6ADDR_REGEXP"; then
+            if [ -z "$IP6TABLES_BIN" ]; then
+                # Warn once that v6 specific rules were not applied.
+                if [ "$V6WARNING" -eq 0 ]; then
+                    echo "Warning: v6 rule(s) were skipped (no ip6tables support)!"
+                    V6WARNING=1
+                fi
+            else
+		case $conf_mode in
+			atomic)
+				echo "$COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/v6/$table/$TARGET
+				;;
+			inline)
+				$IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS || 
+					echo Failed: $IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS $AGRS2
+				;;
+			batch)
+				echo "$IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/batched_v6
+		esac
             fi
-        else
-            $IP6TABLES_BIN "$@"
-        fi
-		return
+	    return
 	fi
 
-	# Anything with a v4 address is for v4 only
-	if echo "$*" | grep -q -E "$V4ADDR_REGEXP"; then
-		$IP4TABLES_BIN "$@"
-		return
-	fi
 
 	# If we get here, then put in both
-    $IP4TABLES_BIN "$@" && \
-    [[ -n "$IP6TABLES_BIN" ]] && $IP6TABLES_BIN "$@" || /bin/true
+	case $conf_mode in
+		atomic)
+			echo "$COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/v4/$table/$TARGET
+			echo "$COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/v6/$table/$TARGET
+			;;
+		inline)
+			$IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS || 
+				echo Failed: $IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS
+			if [ -n "$IP6TABLES_BIN" ]; then
+				$IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS || 
+					echo Failed: $IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS
+			fi
+			;;
+		batch)
+			echo "$IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/batched_v4
+			echo "$IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/batched_v6
+	esac
+
 }
 
-IPTABLES="dual_tables"
+IPTABLES="iptables_with_table"
 
 function iptables_test() {
 	echo "/sbin/iptables $*"
@@ -80,6 +184,25 @@ function check_kernel_v6_support() {
         return 1
     fi
     return 0
+}
+
+function check_atomic() {
+	IP4TABLES_SAVE_BIN=$(which iptables-save)
+	IP4TABLES_RESTORE_BIN=$(which iptables-restore)
+	IP6TABLES_SAVE_BIN=$(which ip6tables-save)
+	IP6TABLES_RESTORE_BIN=$(which ip6tables-restore)
+
+	if [ -z "$IP4TABLES_RESTORE_BIN" -o ! -x "$IP4TABLES_RESTORE_BIN" \
+		-o -z "$IP4TABLES_SAVE_BIN" -o ! -x "$IP4TABLES_SAVE_BIN" ]; then
+		echo "Cannot find iptables-{save,restore}, cannot use mode=atomic"
+		exit 1
+	fi
+
+	if [ -z "$IP6TABLES_RESTORE_BIN" -o ! -x "$IP6TABLES_RESTORE_BIN" \
+		-o -z "$IP6TABLES_SAVE_BIN" -o ! -x "$IP6TABLES_SAVE_BIN" ]; then
+		echo "Cannot find ip6tables-{save,restore}, cannot use mode=atomic"
+		exit 1
+	fi
 }
 
 # Checks for iptables support in the kernel and configures the binaries to use.
@@ -117,8 +240,87 @@ function find_iptables() {
         fi
     fi
 
-    # Force all users of iptables through our method above.
-    IPTABLES="dual_tables"
+    # Force all users of iptables through iptables_with_table which ensures that -t is set
+    IPTABLES="iptables_with_table"
+}
+
+
+# Takes the filestructure that iptables_with_table has made and makes a
+# file per ip version ready for iptables-restore
+function build_atomic() {
+	for version in v4 v6; do
+		FILE=$DATADIR/tmp/merged_$version
+		rm -f $FILE
+		for table in $DATADIR/tmp/$version/*; do
+			table=`basename $table`
+			echo "*$table" >> $FILE
+			for chain in $DATADIR/tmp/$version/$table/*; do
+				chain=`basename $chain`
+				case $chain in
+					INPUT|OUTPUT|PREROUTING|POSTROUTING|FORWARD)
+						if [ "$table" = "filter" ]; then
+							echo ":$chain DROP" >> $FILE
+						else
+							echo ":$chain ACCEPT" >> $FILE
+						fi
+						;;
+					*)
+						echo ":$chain -" >> $FILE
+				esac
+			done
+			for chain in $DATADIR/tmp/$version/$table/*; do
+				cat $chain >> $FILE
+			done
+			echo "COMMIT" >> $FILE
+		done
+	done
+}
+
+# Takes the files build by build_atomic and loads them in a "safe" way
+# It first save the current ipxtables state and then tries to load the new
+# state. If the load fails for any reason it tries to restore the original
+# state it saved to avoid the firewall being left in a half state.
+function atomic_load() {
+	substatus Save IPv4
+	iptables-save  > $DATADIR/tmp/saved_v4
+	substatus Save IPv6
+	ip6tables-save  > $DATADIR/tmp/saved_v6
+
+	if [ -e "$DATADIR/tmp/merged_v4" ]; then
+		substatus Load IPv4
+		iptables-restore  $DATADIR/tmp/merged_v4
+		if [ "$?" -ne 0 ]; then
+			echo "ERROR: failed to load new iptables, now restoring old state"
+			substatus Load saved IPv4
+			iptables-restore  $DATADIR/tmp/saved_v4 || echo "ERROR: failed to restore old IPv4 state"
+			exit 1
+		fi
+	fi
+
+	if [ -e "$DATADIR/tmp/merged_v6" ]; then
+		substatus Load IPv6
+		ip6tables-restore  $DATADIR/tmp/merged_v6
+		if [ "$?" -ne 0 ]; then
+			echo "ERROR: failed to load new ip6tables, now restoring old state"
+			substatus Load saved IPv6
+			ip6tables-restore  $DATADIR/tmp/saved_v6 || echo "ERROR: failed to restore old IPv6 state"
+			substatus Load saved IPv4
+			iptables-restore  $DATADIR/tmp/saved_v4 || echo "ERROR: failed to restore old IPv4 state"
+			exit 1
+		fi
+	fi
+}
+
+# Takes the batched rules produced by iptables_with_table and loads them
+function batch_load() {
+
+	substatus Load IPv4
+	bash  $DATADIR/tmp/batched_v4
+
+	if [ -n "$IP6TABLES_BIN" ]; then
+		substatus Load IPv6
+		bash  $DATADIR/tmp/batched_v6
+	fi
 }
 
 # Make IPTABLES available to callers and subshells.

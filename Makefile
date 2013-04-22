@@ -10,6 +10,7 @@ DESTDIR ?=
 BINDIR ?= $(PREFIX)/sbin
 SHARDIR ?=$(PREFIX)/share
 ETCDIR ?= $(PREFIX)/etc
+DATADIR ?= $(PREFIX)/var/cache/bearwall
 
 PKGNAME=bearwall
 IPTABLES=iptables
@@ -30,7 +31,7 @@ SUPPORT := $(wildcard support/*)
 all: build-firewall
 
 build-firewall:
-	@sed -e s#@BASEDIR@#$(BASEDIR)#g -e s#@CONFDIR@#$(CONFDIR)#g \
+	@sed -e s#@BASEDIR@#$(BASEDIR)#g -e s#@CONFDIR@#$(CONFDIR)#g -e s#@DATADIR@#$(DATADIR)#g \
 		src/firewall.in \
 		>src/$(PKGNAME)
 	@sed -e s#@CONFDIR@#$(CONFDIR)#g \
@@ -64,6 +65,11 @@ install-bin: all
 		do install -D --group=root --mode=644 --owner=root \
 		$$i $(DESTDIR)$(BASEDIR)/$$i; \
 		done
+
+install-data: all
+	install -d --group=root --mode=755 --owner=root \
+		$(DESTDIR)$(DATADIR)
+
 
 install-conf: all
 
@@ -130,7 +136,7 @@ install-doc: all
 	install --group=root --mode=644 --owner=root \
 		doc/$(PKGNAME).8 $(DESTDIR)$(MANDIR)/man8
 
-install: install-bin install-conf install-doc install-rsyslog-conf install-logrotate-conf
+install: install-bin install-conf install-doc install-data install-rsyslog-conf install-logrotate-conf
 
 install-fragments: install-rsyslog-conf install-logrotate-conf
 

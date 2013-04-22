@@ -64,8 +64,7 @@ function on_startup() {
 # usage:
 #  new_chain chainname
 function new_chain() {
-	iptables_with_table --delete-chain $1 &>/dev/null
-	iptables_with_table --new $1
+	iptables_with_table --new-chain $1
 }
 
 
@@ -97,55 +96,6 @@ function import {
 			subsubstatus Loaded ${1}
 			;;
 	esac
-}
-
-function iptables_with_table {
-	local TARGET table ARGS JUMP
-	COMMAND=$1
-	shift
-	TARGET=$1
-	shift
-	cmd=
-	ARGS=
-	JUMP=
-	table=
-	while [ $# -gt 0 ]; do
-		if [ 	   "-j" = "$1" -o "--jump" = "$1" \
-			-o "-N" = "$1" -o "--new-chain" = "$1" \
-			-o "-X" = "$1" -o "--delete-chain" = "$1" \
-			-o "-A" = "$1" -o "--append" = "$1" \
-			-o "-A" = "$1" -o "--insert" = "$1" \
-			]; then
-			cmd=$1
-			shift
-			JUMP=$1
-		elif [ "-t" = "$1" -o "--table" = "$1" ]; then
-			shift
-			echo \*\*\* TABLE found: $1 \*\*\*
-			table=$1
-		else
-			ARGS="$ARGS $1"
-		fi
-		shift
-	done
-	if [ -z "$table" ]; then
-		case $TARGET:$JUMP in
-			POSTROUTING:*|*-postrouting-out:*|PREROUTING:*|*-prerouting-in:*)
-				table=nat
-				;;
-			*:*MARK|*:TOS|*:TTL|*-mangle-*|mangle-*)
-				table=mangle
-				;;
-			*)
-				table=filter
-				;;
-		esac
-	fi
-	if [ ! -z "$JUMP" ]; then
-		JUMP="$cmd $JUMP"
-	fi
-	$IPTABLES -t $table $COMMAND $TARGET $JUMP $ARGS || 
-		echo Failed: $IPTABLES -t $table $COMMAND $TARGET $JUMP $ARGS
 }
 
 # given a target, execute a chain
@@ -219,18 +169,32 @@ function policy() {
 # the remaining (default) chains. This is one of the only methods where we
 # intentionally use IPXTABLES_BIN rather than IPTABLES, since v4/v6 have
 # different sets of tables.
+# Note this function should only be called for inline and batch modes.
+# Flushing is done implicitly for atomic mode
 function flush_rules() {
     local policy="$1"
 	cat /proc/net/ip_tables_names | while read table; do
-		$IP4TABLES_BIN -t $table --flush
-		$IP4TABLES_BIN -t $table --delete-chain
-        [[ -n "$policy" ]] && reset_policies $IP4TABLES_BIN $table $policy
+		if [ "$conf_mode" = "inline" ]; then
+			$IP4TABLES_BIN -t $table --flush
+			$IP4TABLES_BIN -t $table --delete-chain
+		        [[ -n "$policy" ]] && reset_policies $IP4TABLES_BIN $table $policy
+		else
+			echo "$IP4TABLES_BIN -t $table --flush" >> $DATADIR/tmp/batched_v4
+			echo "$IP4TABLES_BIN -t $table --delete-chain" >> $DATADIR/tmp/batched_v4
+		        [[ -n "$policy" ]] && reset_policies $IP4TABLES_BIN $table $policy $DATADIR/tmp/batched_v4
+		fi
 	done
     if [ -n "$IP6TABLES_BIN" ]; then
 	    cat /proc/net/ip6_tables_names | while read table; do
-            $IP6TABLES_BIN -t $table --flush
-            $IP6TABLES_BIN -t $table --delete-chain
-            [[ -n "$policy" ]] && reset_policies $IP6TABLES_BIN $table $policy
+		if [ "$conf_mode" = "inline" ]; then
+	            $IP6TABLES_BIN -t $table --flush
+	            $IP6TABLES_BIN -t $table --delete-chain
+	            [[ -n "$policy" ]] && reset_policies $IP6TABLES_BIN $table $policy
+		else
+	            echo "$IP6TABLES_BIN -t $table --flush" >> $DATADIR/tmp/batched_v6
+	            echo "$IP6TABLES_BIN -t $table --delete-chain" >> $DATADIR/tmp/batched_v6
+	            [[ -n "$policy" ]] && reset_policies $IP6TABLES_BIN $table $policy $DATADIR/tmp/batched_v6
+		fi
         done
     fi
 }
@@ -240,9 +204,14 @@ function reset_policies() {
     local bin="$1"
     local table="$2"
     local policy="$3"
+    local file="$4"
     $bin -t $table -nL | grep ^Chain | awk '{print $2}' |
     while read chain; do
-        $bin -t $table --policy $chain $policy
+	if [ -z "$file" ]; then
+	        $bin -t $table --policy $chain $policy
+	else
+	        $bin -t $table --policy $chain $policy >> $file
+	fi
     done
 }
 
@@ -315,12 +284,3 @@ function load_interface_rules() {
 	. $CONFDIR/interfaces.d/${rulename}.if $*
 	
 }
-
-function init_rules() {
-	# List of rulesets that are already imported.
-
-	LOADED_RULES=$(${IPTABLES} --list | grep ^Chain | awk '{print $2}')
-
-	IMPORTED="${LOADED_RULES}"
-}
-
