@@ -32,7 +32,7 @@ logging=syslog
 #
 # Values:
 #   - inline
-#       The old style of bearwall. Each iptables rule is executed as is it 
+#       The old style of bearwall. Each iptables rule is executed as is it
 #       built with out any delay. Each rule can fail individually and the
 #       firewall will just continue with the next rule. This can be useful
 #       for debugging interface rules as it will print the failed rule to
@@ -40,24 +40,26 @@ logging=syslog
 #       forwarding for long periods depending on the size/complexity of your
 #       firewall.
 #   - batch
-#       This method outputs all iptables/ip6tables commands into a single file
-#       per ip version while building the rules. The rules are then executed
-#       one after each other as fast as possable. This makes the time the
-#       firewall is loading (not forwarding) shorter than inline. Each rule
-#       can fail individually as with inline, but the rule is not printed
-#       to stdout after failure.
+#       This method outputs all iptables/ip6tables commands into a single
+#       file per ip version while building the rules. The rules are then
+#       executed one after each other as fast as possible. This makes the
+#       time the firewall is loading (not forwarding) shorter than inline.
+#       Each rule can fail individually as with inline, but the rule is not
+#       printed to stdout after failure.
 #   - atomic
 #       This is the default method of bearwall moving forward. Bearwall
 #       generates a iptables-restore script rather than iptables commands
 #       in this mode allowing for much faster load time of the rules into
 #       the kernel. Each iptables table {mangle, nat, filter} is loaded
-#	attomicly into the kernel. This minimises forwarding downtime. However
-#       due to the atomic nature, the entire table and all tables after fail
-#       if a single rule fails. To minimise the unpredictable state of a rule
-#       failure in atomic mode, bearwall uses iptables-save to store the
-#       current state of the firewall before doing atomic loads. If an error
-#       is detected during atomic loading, bearwall automaticly attempts to
-#       restore the kernel state to what it was before the atomic load started.
-#       This should leave the firewall in a known state on an error.
+#	    atomically into the kernel. This minimises forwarding downtime.
+#	    However due to the atomic nature, the entire table and all tables
+#	    after fail if a single rule fails. To minimise the unpredictable
+#	    state of a rule failure in atomic mode, bearwall uses iptables-save
+#	    to store the current state of the firewall before doing atomic
+#	    loads. If an error is detected during atomic loading, bearwall
+#	    automatically attempts to restore the kernel state to what it was
+#	    before the atomic load started. This should leave the firewall in a
+#	    known state on an error.
+#
 # Default: mode=atomic
 mode=atomic
