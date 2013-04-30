@@ -137,7 +137,7 @@ install-doc: all
 	install --group=root --mode=644 --owner=root \
 		doc/$(PKGNAME).8 $(DESTDIR)$(MANDIR)/man8
 
-install: install-bin install-conf install-doc install-data install-rsyslog-conf install-logrotate-conf
+install: install-bin install-conf install-doc install-data
 
 install-fragments: install-rsyslog-conf install-logrotate-conf
 
