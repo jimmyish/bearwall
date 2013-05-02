@@ -18,7 +18,7 @@ export V6WARNING=${V6WARNING:-0}
 # rulesets and scripts. It is the job of this function to figure out whether 
 # the rule is for iptables, ip6tables or both, and how to get the rule to the
 # binary based on the mode of operation.
-function iptables_with_table {
+function iptables_with_mode {
 	local TARGET table ARGS JUMP
 	COMMAND=$1
 	shift
@@ -42,13 +42,9 @@ function iptables_with_table {
 			shift
 			echo \*\*\* TABLE found: $1 \*\*\*
 			table=$1
-		elif [ "--nflog-prefix" = "$1" -o "--log-prefix" = "$1" ]; then
-			if [ "$conf_mode" != "inline" ]; then
-				ARGS="$ARGS $1 \"$2\""
-				shift
-			else
-				ARGS="$ARGS $1"
-			fi
+                elif [ "--nflog-prefix" = "$1" -o "--log-prefix" = "$1" ]; then
+			ARGS="$ARGS $1 \"$2\""
+		      	shift
 		else
 			ARGS="$ARGS $1"
 		fi
@@ -94,10 +90,6 @@ function iptables_with_table {
 			atomic)
 				echo "$COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/v4/$table/$TARGET
 				;;
-			inline)
-				$IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS || 
-					echo Failed: $IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS
-				;;
 			batch)
 				echo "$IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/batched_v4
 		esac
@@ -118,10 +110,6 @@ function iptables_with_table {
 			atomic)
 				echo "$COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/v6/$table/$TARGET
 				;;
-			inline)
-				$IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS || 
-					echo Failed: $IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS $AGRS2
-				;;
 			batch)
 				echo "$IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/batched_v6
 		esac
@@ -136,14 +124,6 @@ function iptables_with_table {
 			echo "$COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/v4/$table/$TARGET
 			echo "$COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/v6/$table/$TARGET
 			;;
-		inline)
-			$IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS || 
-				echo Failed: $IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS
-			if [ -n "$IP6TABLES_BIN" ]; then
-				$IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS || 
-					echo Failed: $IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS
-			fi
-			;;
 		batch)
 			echo "$IP4TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/batched_v4
 			echo "$IP6TABLES_BIN -t $table $COMMAND $TARGET $JUMP $ARGS" >> $DATADIR/tmp/batched_v6
@@ -151,7 +131,44 @@ function iptables_with_table {
 
 }
 
-IPTABLES="iptables_with_table"
+# This method acts as a replacement for the iptables binary ($IPTABLES) in all
+# rulesets and scripts. It dispatches the commands to iptables, ip6tables or
+# both depending on the type of rule and the data it is operating on.
+# This is the legacy way of doing things used by inline
+function dual_tables() {
+
+        # Anything to the nat table is for v4 only
+        if echo "$*" | grep -q "\-t nat"; then
+                $IP4TABLES_BIN "$@"
+                return
+        fi
+
+
+        # Anything with a v6 address is for v6 only
+        if echo "$*" | grep -q -E "$V6ADDR_REGEXP"; then
+        if [ -z "$IP6TABLES_BIN" ]; then
+            # Warn once that v6 specific rules were not applied.
+            if [ "$V6WARNING" -eq 0 ]; then
+                echo "Warning: v6 rule(s) were skipped (no ip6tables support)!"
+                V6WARNING=1
+            fi
+        else
+            $IP6TABLES_BIN "$@"
+        fi
+                return
+        fi
+
+        # Anything with a v4 address is for v4 only
+        if echo "$*" | grep -q -E "$V4ADDR_REGEXP"; then
+                $IP4TABLES_BIN "$@"
+                return
+        fi
+
+        # If we get here, then put in both
+    $IP4TABLES_BIN "$@" && \
+    [[ -n "$IP6TABLES_BIN" ]] && $IP6TABLES_BIN "$@" || /bin/true
+}
+
 
 function iptables_test() {
 	echo "/sbin/iptables $*"
@@ -240,12 +257,16 @@ function find_iptables() {
         fi
     fi
 
-    # Force all users of iptables through iptables_with_table which ensures that -t is set
-    IPTABLES="iptables_with_table"
+    # Force all users of iptables through iptables_with_mode which ensures that -t is set
+    if [ "$conf_mode" = "inline" ]; then
+        IPTABLES="dual_tables"
+    else
+        IPTABLES="iptables_with_mode"
+    fi
 }
 
 
-# Takes the filestructure that iptables_with_table has made and makes a
+# Takes the filestructure that iptables_with_mode has made and makes a
 # file per ip version ready for iptables-restore
 function build_atomic() {
 	for version in v4 v6; do
@@ -311,7 +332,7 @@ function atomic_load() {
 	fi
 }
 
-# Takes the batched rules produced by iptables_with_table and loads them
+# Takes the batched rules produced by iptables_with_mode and loads them
 function batch_load() {
 
 	substatus Load IPv4
