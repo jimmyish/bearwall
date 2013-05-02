@@ -27,6 +27,9 @@ if [ $# -gt "0" ] ; then
         -f|--flush)
             FLUSH=1
             ;;
+        -d|--debug|--verbose)
+            set -x
+            ;;
 		*)
 			echo $(basename $0) takes no options.
 			echo For more information read the man page.
