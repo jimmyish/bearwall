@@ -67,10 +67,8 @@ cd $BASEDIR
 # Check we can understand how to load modules for this kernel before we start
 
 case `uname -r` in
-    3.*) EXT=ko;;
-	2.6.*) EXT=ko;;
 	2.4.*) EXT=o;;
-	*) echo Unsupported kernel version `uname -r`; exit ;;
+	*) EXT=ko;;
 esac
 
 # Check we actually have interface configuration before we start
