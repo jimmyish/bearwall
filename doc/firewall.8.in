@@ -15,7 +15,7 @@
 @PKGNAME@ \- front-end script for configuring an iptables firewall
 
 .SH SYNOPSIS
-.B firewall [OPTION]
+.B bearwall [OPTION]
 
 .SH DESCRIPTION
 The
