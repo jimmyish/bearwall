@@ -2,7 +2,7 @@
 # This interface firewall is only run on demand
 #
 
-on_boot
+on_startup
 
 policy in tcp-trust
 policy in udp-trust
