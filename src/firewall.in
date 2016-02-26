@@ -219,7 +219,7 @@ for i in /lib/modules/`uname -r`/kernel/net/{,ipv4/}netfilter/{nf,ip}_conntrack_
 done
 
 status Loading NAT helper modules
-for i in /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/{nf,ip}_nat_*.$EXT; do
+for i in /lib/modules/`uname -r`/kernel/net/{,ipv4/}netfilter/{nf,ip}_nat_*.$EXT; do
 	if [ -f $i ] ; then
 		module=$(basename ${i/.$EXT/})
 		# Strip {nf,ip}_nat_
