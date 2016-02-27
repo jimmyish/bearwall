@@ -180,4 +180,21 @@ release:
 		$(PKGNAME)-$(VERSION)/
 	@rm -rf $(tmpdir) $(tmpdir)/revision-info.sh
 
+codename := $(shell lsb_release -sc)
+debian_repo := https://github.com/jimmyish/bearwall-debian.git
+
+deb:
+	@rm -rf debian
+	if [ "$(codename)" = "squeeze" ]; then \
+                git clone -b squeeze $(debian_repo) debian; \
+	elif [ "$(codename)" = "precise" ]; then \
+                git clone -b squeeze $(debian_repo) debian; \
+        elif [ -x "/bin/systemd" ]; then \
+                git clone -b master $(debian_repo) debian; \
+        else \
+                git clone -b sysvinit $(debian_repo) debian; \
+        fi
+	@mk-build-deps -i -r -t 'apt-get -f -y --force-yes'
+	@fakeroot debian/rules binary
+
 .PHONY: release build-rev
