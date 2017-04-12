@@ -189,7 +189,7 @@ deb:
                 git clone -b squeeze $(debian_repo) debian; \
 	elif [ "$(codename)" = "precise" ]; then \
                 git clone -b squeeze $(debian_repo) debian; \
-        elif [ -x "/bin/systemd" ]; then \
+        elif [ -x "/bin/systemd" ] || dpkg -s libsystemd0 > /dev/null 2>&1; then \
                 git clone -b master $(debian_repo) debian; \
         else \
                 git clone -b sysvinit $(debian_repo) debian; \
